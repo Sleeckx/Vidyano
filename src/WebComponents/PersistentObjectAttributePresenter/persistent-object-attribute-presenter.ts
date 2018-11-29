@@ -76,7 +76,7 @@ namespace Vidyano.WebComponents {
             hidden: {
                 type: Boolean,
                 reflectToAttribute: true,
-                computed: "_isHidden(attribute.isVisible)"
+                computed: "!attribute.isVisible"
             },
             hasError: {
                 type: Boolean,
@@ -91,7 +91,7 @@ namespace Vidyano.WebComponents {
             "focus": "_onFocus"
         },
         observers: [
-            "_attributeChanged(attribute, isAttached)"
+            "_attributeChanged(attribute, isConnected)"
         ],
         forwardObservers: [
             "attribute.parent.isEditing",
@@ -118,11 +118,11 @@ namespace Vidyano.WebComponents {
         disabled: boolean;
         readOnly: boolean;
 
-        attached() {
+        connectedCallback() {
             if (!this._customTemplate)
-                this._customTemplate = <PolymerTemplate><any>Polymer.dom(this).querySelector("template[is='dom-template']");
+                this._customTemplate = <PolymerTemplate><any>this.querySelector("template[is='dom-template']");
 
-            super.attached();
+            super.connectedCallback();
         }
 
         queueFocus() {
@@ -133,13 +133,13 @@ namespace Vidyano.WebComponents {
                 this._focusQueued = true;
         }
 
-        private _attributeChanged(attribute: Vidyano.PersistentObjectAttribute, isAttached: boolean) {
+        private _attributeChanged(attribute: Vidyano.PersistentObjectAttribute, isConnected: boolean) {
             if (this._renderedAttribute) {
                 Polymer.dom(this.$.content).children.forEach(c => Polymer.dom(this.$.content).removeChild(c));
                 this._renderedAttributeElement = this._renderedAttribute = null;
             }
 
-            if (attribute && isAttached) {
+            if (attribute && isConnected) {
                 this._setLoading(true);
 
                 if (!this.getAttribute("height"))
@@ -192,14 +192,20 @@ namespace Vidyano.WebComponents {
         }
 
         private _getAttributeTypeImportInfo(type: string): { filename: string; synonyms?: string[]; } {
+            const typeSynonyms: { [key: string]: string[]; } = {
+                "Boolean": ["YesNo"],
+                "DropDown": ["Enum"],
+                "String": ["Guid", "NullableGuid"],
+                "User": ["NullableUser"]
+            };
+
             let synonyms: string[];
-            for (const key in Vidyano.WebComponents.Attributes.PersistentObjectAttribute.typeSynonyms) {
-                const typeSynonyms = Vidyano.WebComponents.Attributes.PersistentObjectAttribute.typeSynonyms[key];
+            for (const key in typeSynonyms) {
                 if (key === type)
-                    synonyms = typeSynonyms;
-                else if (typeSynonyms.indexOf(type) >= 0) {
+                    synonyms = typeSynonyms[key];
+                else if (typeSynonyms[key].indexOf(type) >= 0) {
                     type = key;
-                    synonyms = typeSynonyms;
+                    synonyms = typeSynonyms[key];
                 }
             }
 
@@ -245,19 +251,19 @@ namespace Vidyano.WebComponents {
 
         private async _renderAttribute(attribute: Vidyano.PersistentObjectAttribute, attributeType: string) {
             await _attributeImports[attributeType];
-            if (!this.isAttached || attribute !== this.attribute || this._renderedAttribute === attribute)
+            if (!this.isConnected || attribute !== this.attribute || this._renderedAttribute === attribute)
                 return;
 
             let focusTarget: HTMLElement;
             try {
                 if (this._customTemplate)
-                    Polymer.dom(focusTarget = this.$.content).appendChild(this._customTemplate.stamp({ attribute: attribute }).root);
+                    (focusTarget = this.$.content).appendChild(this._customTemplate.stamp({ attribute: attribute }).root);
                 else {
                     const config = <PersistentObjectAttributeConfig>this.app.configuration.getAttributeConfig(attribute);
                     this.noLabel = this.noLabel || (config && !!config.noLabel);
 
                     if (!!config && config.hasTemplate)
-                        Polymer.dom(this.$.content).appendChild(config.stamp(attribute, config.as || "attribute"));
+                        this.$.content.appendChild(config.stamp(attribute, config.as || "attribute"));
                     else {
                         this._renderedAttributeElement = <WebComponents.Attributes.PersistentObjectAttribute>new (Vidyano.WebComponents.Attributes["PersistentObjectAttribute" + attributeType] || Vidyano.WebComponents.Attributes.PersistentObjectAttributeString)();
                         this._renderedAttributeElement.classList.add("attribute");
@@ -265,7 +271,7 @@ namespace Vidyano.WebComponents {
                         this._renderedAttributeElement.nonEdit = this.nonEdit;
                         this._renderedAttributeElement.disabled = this.disabled;
 
-                        Polymer.dom(this.$.content).appendChild(focusTarget = this._renderedAttributeElement);
+                        this.$.content.appendChild(focusTarget = this._renderedAttributeElement);
                     }
                 }
 
@@ -275,7 +281,7 @@ namespace Vidyano.WebComponents {
                 this._setLoading(false);
 
                 if (this._focusQueued) {
-                    Polymer.dom(focusTarget).flush();
+                    Polymer.flush();
 
                     this._focusElement(focusTarget);
                     this._focusQueued = false;
@@ -311,23 +317,19 @@ namespace Vidyano.WebComponents {
             return !StringEx.isNullOrEmpty(validationError);
         }
 
-        private _isHidden(isVisible: boolean): boolean {
-            return !isVisible;
-        }
-
         private _onFocus() {
-            const target = <HTMLElement>this._renderedAttributeElement || this._getFocusableElement();
-            if (!target)
+            const element = <HTMLElement>this._renderedAttributeElement || Polymer.IronFocusablesHelper.getTabbableNodes(this.shadowRoot.host)[0];
+            if (!element)
                 return;
 
-            this._focusElement(target);
+            this._focusElement(element);
         }
 
         private _loadingChanged(loading: boolean) {
             if (loading)
                 this.fire("attribute-loading", { attribute: this.attribute }, { bubbles: true });
             else {
-                Polymer.dom(this).flush();
+                Polymer.flush();
                 this.fire("attribute-loaded", { attribute: this.attribute }, { bubbles: true });
             }
         }

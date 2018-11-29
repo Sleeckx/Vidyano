@@ -173,7 +173,7 @@
                         &[is="vi-query-grid-table-data-column"] {
                             > * {
                                 display: block;
-                                padding: 0 var(--vi-query-grid-cell-padding, --theme-h5);
+                                padding: 0 var(--vi-query-grid-cell-padding, var(--theme-h5));
                                 height: var(--query-grid--row-height);
                                 line-height: var(--query-grid--row-height);
                                 box-sizing: border-box;
@@ -435,12 +435,12 @@
 
     > vi-popup-core#actions {
         vi-action-button {
-            button[is="vi-button"] {
+            vi-button {
                 height: var(--theme-h2);
             }
 
             & > vi-popup-menu {
-                button[is="vi-button"] > vi-icon[source="Down"] {
+                vi-button > vi-icon[source="Down"] {
                     transform: rotate(-90deg);
                 }
             }

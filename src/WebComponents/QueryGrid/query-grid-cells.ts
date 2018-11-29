@@ -1,7 +1,7 @@
 namespace Vidyano.WebComponents {
     "use strict";
 
-    @Resource.register
+    @WebComponent.register()
     export class QueryGridCellTemplate extends Resource {
         static Load(source: string): PolymerTemplate {
             const cellTemplate = <QueryGridCellTemplate>Resource.LoadResource(source, "VI-QUERY-GRID-CELL-TEMPLATE") || <QueryGridCellTemplate>Resource.LoadResource("Default", "VI-QUERY-GRID-CELL-TEMPLATE");
@@ -111,7 +111,7 @@ namespace Vidyano.WebComponents {
                     this._textNode.nodeValue = this._textNodeValue = <string>value;
             }
             else
-                Polymer.dom(this.root).appendChild(this._textNode = document.createTextNode(this._textNodeValue = <string>value));
+                this.shadowRoot.appendChild(this._textNode = document.createTextNode(this._textNodeValue = <string>value));
         }
 
         private _getTypeHint(column: Vidyano.QueryColumn, name: string, defaultValue?: string): string {
@@ -143,7 +143,7 @@ namespace Vidyano.WebComponents {
             }
 
             if (!this._image) {
-                Polymer.dom(this).appendChild(this._image = document.createElement("div"));
+                this.appendChild(this._image = document.createElement("div"));
                 this._image.classList.add("image");
             }
 
@@ -168,7 +168,7 @@ namespace Vidyano.WebComponents {
             }
         },
         observers: [
-            "_update(value, oldValue, isAttached)"
+            "_update(value, oldValue, isConnected)"
         ]
     })
     export class QueryGridCellBoolean extends WebComponent {
@@ -206,7 +206,7 @@ namespace Vidyano.WebComponents {
                     }
 
                     if (!this._textNode)
-                        this._textNode = <Text>Polymer.dom(this.root).appendChild(document.createTextNode(value.column.typeHints["nullkey"] || "—"));
+                        this._textNode = <Text>this.shadowRoot.appendChild(document.createTextNode(value.column.typeHints["nullkey"] || "—"));
                     else
                         this._textNode.nodeValue = value.column.typeHints["nullkey"] || "—";
                 } else if (!value.column.typeHints || ((!value.column.typeHints["falsekey"] && !displayValue) || (!value.column.typeHints["truekey"] && displayValue))) {
@@ -219,7 +219,7 @@ namespace Vidyano.WebComponents {
                         this._textNode.nodeValue = "";
 
                     if (!this._icon)
-                        this._icon = <HTMLElement>Polymer.dom(this.root).appendChild(new Vidyano.WebComponents.Icon("Selected"));
+                        this._icon = <HTMLElement>this.shadowRoot.appendChild(new Vidyano.WebComponents.Icon("Selected"));
 
                     if (!value.getValue())
                         this._icon.removeAttribute("is-selected");
@@ -230,7 +230,7 @@ namespace Vidyano.WebComponents {
                     const displayTextKey = value.column.typeHints[displayValue ? "truekey" : "falsekey"];
                     const displayTextValue = this.translations[displayTextKey] || displayTextKey;
                     if (!this._textNode)
-                        this._textNode = <Text>Polymer.dom(this.root).appendChild(document.createTextNode(displayTextValue));
+                        this._textNode = <Text>this.shadowRoot.appendChild(document.createTextNode(displayTextValue));
                     else
                         this._textNode.nodeValue = displayTextValue;
                 }

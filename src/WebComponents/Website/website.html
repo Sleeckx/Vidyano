@@ -4,14 +4,18 @@
 <dom-module id="vi-website">
     <template>
         <link rel="stylesheet" href="website.css" />
-        <template is="dom-if" if="[[scroll]]">
-            <vi-scroller no-horizontal>
-                <content></content>
-            </vi-scroller>
-        </template>
-        <template is="dom-if" if="[[!scroll]]">
-            <content></content>
-        </template>
+        <dom-if if="[[scroll]]">
+            <template>
+                <vi-scroller no-horizontal>
+                    <slot></slot>
+                </vi-scroller>
+            </template>
+        </dom-if>
+        <dom-if if="[[!scroll]]">
+            <template>
+                <slot></slot>
+            </template>
+        </dom-if>
     </template>
 </dom-module>
 

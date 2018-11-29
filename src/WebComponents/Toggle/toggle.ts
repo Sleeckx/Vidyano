@@ -56,9 +56,5 @@
         private _computeIsNull(toggled: boolean): boolean {
             return toggled !== false && toggled !== true;
         }
-
-        private _isEmpty(label: string): boolean {
-            return !label;
-        }
     }
 }

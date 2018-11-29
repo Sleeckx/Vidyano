@@ -10,7 +10,7 @@
         z-index: 1;
     }
 
-    .button.browse {
+    .browse {
         ::content input {
             position: absolute;
             top: 0;
@@ -25,7 +25,7 @@
     }
 
     span, input {
-        color: var(--vi-persistent-object-attribute-foreground, --theme-foreground);
+        color: var(--vi-persistent-object-attribute-foreground, var(--theme-foreground));
 
         &[sensitive] {
             @apply(--vi-app--sensitive);

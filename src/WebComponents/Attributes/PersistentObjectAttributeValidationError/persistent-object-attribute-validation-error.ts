@@ -26,7 +26,7 @@ namespace Vidyano.WebComponents.Attributes {
             return !validationError || isReadOnly;
         }
 
-        private _showError(e: TapEvent) {
+        private _showError(e: Polymer.TapEvent) {
             e.stopPropagation();
 
             this.app.showMessageDialog({

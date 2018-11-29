@@ -25,7 +25,9 @@ namespace Vidyano.WebComponents {
         readonly programUnit: Vidyano.ProgramUnit; private _setProgramUnit: (programUnit: Vidyano.ProgramUnit) => void;
         readonly error: string; private _setError: (error: string) => void;
 
-        private _activate(e: CustomEvent, { parameters }: { parameters: IProgramUnitPresenterRouteParameters; }) {
+        private _activate(e: CustomEvent) {
+            const { parameters }: { parameters: IProgramUnitPresenterRouteParameters; } = e.detail;
+
             if (!this.app.service || !this.app.service.application)
                 return;
 
@@ -48,7 +50,7 @@ namespace Vidyano.WebComponents {
 
             const config = this.app.configuration.getProgramUnitConfig(programUnit.name);
             if (!!config && config.hasTemplate)
-                Polymer.dom(this).appendChild(config.stamp(programUnit, config.as || "programUnit"));
+                this.appendChild(config.stamp(programUnit, config.as || "programUnit"));
         }
     }
 }

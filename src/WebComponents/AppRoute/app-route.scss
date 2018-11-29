@@ -4,7 +4,7 @@
     @include flex();
     @include layout-horizontal();
 
-    ::content > * {
+    ::slotted(*) {
         @include flex();
     }
 

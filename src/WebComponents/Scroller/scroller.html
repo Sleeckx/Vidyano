@@ -1,25 +1,25 @@
 <link rel="import" href="../SizeTracker/size-tracker.html" />
 
 <dom-module id="vi-scrollbar-test">
-    <style>
-        #wrapper {
-            width: 100px;
-            height: 100px;
-            overflow: auto;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-            #wrapper::-webkit-scrollbar {
-                display: none;
+    <template>
+        <style>
+            #wrapper {
+                width: 100px;
+                height: 100px;
+                overflow: auto;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
             }
 
-        #content {
-            width: 200px;
-            height: 200px;
-        }
-    </style>
-    <template>
+                #wrapper::-webkit-scrollbar {
+                    display: none;
+                }
+
+            #content {
+                width: 200px;
+                height: 200px;
+            }
+        </style>
         <div id="wrapper">
             <div id="content"></div>
         </div>
@@ -34,7 +34,7 @@
             <div id="content" class="relative">
                 <vi-size-tracker on-sizechanged="_innerSizeChanged" trigger-zero></vi-size-tracker>
                 <div class="relative">
-                    <content></content>
+                    <slot></slot>
                 </div>
             </div>
         </div>

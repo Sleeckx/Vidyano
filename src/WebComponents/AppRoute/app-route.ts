@@ -67,8 +67,8 @@ namespace Vidyano.WebComponents {
             this._documentTitleBackup = document.title;
             this._parameters = parameters;
 
-            if (this.preserveContent && Polymer.dom(this).children.length > 0)
-                this._fireActivate(<WebComponent>Polymer.dom(this).children[0]);
+            if (this.preserveContent && this.children.length > 0)
+                this._fireActivate(<WebComponent>this.children[0]);
             else {
                 this._clearChildren();
 
@@ -99,15 +99,17 @@ namespace Vidyano.WebComponents {
                         this._distributeNewComponent();
                 }
                 else {
-                    const template = <PolymerTemplate><any>Polymer.dom(this).querySelector("template[is='dom-template']");
+                    const template = <HTMLTemplateElement>this.querySelector("template[is='dom-template']");
                     if (template) {
-                        Polymer.dom(this).appendChild(template.stamp({ app: this.app }).root);
-                        Polymer.dom(this).flush();
+                        const templateClass = Polymer.Templatize.templatize(template);
+                        const templateInstance = new templateClass({ app: this.app });
+                        this.appendChild(templateInstance.root);
+                        Polymer.flush();
 
                         this._hasChildren = true;
                     }
                     else {
-                        const firstChild = <WebComponent>Polymer.dom(this).children[0];
+                        const firstChild = <WebComponent>this.children[0];
                         if (firstChild) {
                             if (firstChild.updateStyles)
                                 firstChild.updateStyles();
@@ -135,8 +137,8 @@ namespace Vidyano.WebComponents {
             this._clearChildren();
 
             const componentInstance = <WebComponent><any>new this._constructor();
-            Polymer.dom(this).appendChild(componentInstance);
-            Polymer.dom(this).flush();
+            this.appendChild(componentInstance);
+            Polymer.flush();
 
             this._hasChildren = true;
 
@@ -152,12 +154,12 @@ namespace Vidyano.WebComponents {
             if (!this._hasChildren)
                 return;
 
-            Polymer.dom(this).children.filter(c => c.tagName !== "TEMPLATE" && c.getAttribute("is") !== "dom-template").forEach(c => Polymer.dom(this).removeChild(c));
+            Array.from(this.children).filter(c => c.tagName !== "TEMPLATE" && c.getAttribute("is") !== "dom-template").forEach(c => this.removeChild(c));
             this._hasChildren = false;
         }
 
         deactivate(nextRoute?: AppRoute): Promise<boolean> {
-            const component = <WebComponent>Polymer.dom(this).children[0];
+            const component = <WebComponent>this.children[0];
 
             return new Promise<boolean>(resolve => {
                 this.deactivator = resolve;
@@ -189,7 +191,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _activeChanged() {
-            this.toggleClass("active", this.active);
+            this.classList.toggle("active", this.active);
 
             if (this.activate)
                 this.fire("app-route-activated", { route: this, parameters: this._parameters }, { bubbles: true });
@@ -197,12 +199,13 @@ namespace Vidyano.WebComponents {
                 this.fire("app-route-deactivated", { route: this }, { bubbles: true });
         }
 
-        private _titleChanged(e: CustomEvent, detail: { title: string; }) {
-            if (!this.active || this.app.noHistory || e.defaultPrevented || Polymer.dom(e.srcElement || <Node>e.target).parentNode !== this)
+        private _titleChanged(e: CustomEvent) {
+            const { title }: { title: string; } = e.detail;
+            if (!this.active || this.app.noHistory || e.defaultPrevented)
                 return;
 
-            if (this._documentTitleBackup !== detail.title && !!detail.title)
-                document.title = `${detail.title} · ${this._documentTitleBackup}`;
+            if (this._documentTitleBackup !== title && !!title)
+                document.title = `${title} · ${this._documentTitleBackup}`;
             else
                 document.title = this._documentTitleBackup;
 

@@ -1,71 +1,84 @@
 ﻿<script src="../../Libs/pathjs/path.js"></script>
 <script src="../../Libs/shims/requestIdleCallback.js"></script>
-<link rel="import" href="../../Libs/iron-a11y-keys/iron-a11y-keys.html" />
-<link rel="import" href="../../Libs/iron-collapse/iron-collapse.html" />
-<link rel="import" href="../../Libs/iron-list/iron-list.html" />
-<link rel="import" href="../../Libs/iron-media-query/iron-media-query.html" />
-<link rel="import" href="../../Libs/alertify.js/alertify.html" />
-<link rel="import" href="../../Libs/paper-ripple/paper-ripple.html" />
-<link rel="import" href="../WebComponent/webcomponent.html" />
-<link rel="import" href="../Spinner/spinner.html" />
-<link rel="import" href="../AppRoutePresenter/app-route-presenter.html" />
-<link rel="import" href="../AppRoute/app-route.html" />
-<link rel="import" href="../Button/button.html" />
-<link rel="import" href="../Dialog/dialog.html" />
-<link rel="import" href="../Error/error.html" />
-<link rel="import" href="../Grid/grid.html" />
-<link rel="import" href="../Icon/icon.html" />
-<link rel="import" href="../Popup/popup.html" />
-<link rel="import" href="../SessionPresenter/session-presenter.html" />
-<link rel="import" href="../SizeTracker/size-tracker.html" />
-<link rel="import" href="../Spinner/spinner.html" />
-<link rel="import" href="../SignIn/sign-in.html" />
-<link rel="import" href="../SignOut/sign-out.html" />
+<link rel="import" href="../../Libs/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../Libs/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../Libs/iron-list/iron-list.html">
+<link rel="import" href="../../Libs/iron-media-query/iron-media-query.html">
+<link rel="import" href="../../Libs/alertify.js/alertify.html">
+<link rel="import" href="../../Libs/paper-ripple/paper-ripple.html">
+<link rel="import" href="../WebComponent/webcomponent.html">
+<link rel="import" href="../Spinner/spinner.html">
+<link rel="import" href="../AppRoutePresenter/app-route-presenter.html">
+<link rel="import" href="../AppRoute/app-route.html">
+<link rel="import" href="../Button/button.html">
+<link rel="import" href="../Dialog/dialog.html">
+<link rel="import" href="../Error/error.html">
+<link rel="import" href="../Grid/grid.html">
+<link rel="import" href="../Icon/icon.html">
+<link rel="import" href="../Popup/popup.html">
+<link rel="import" href="../SessionPresenter/session-presenter.html">
+<link rel="import" href="../SizeTracker/size-tracker.html">
+<link rel="import" href="../Spinner/spinner.html">
+<link rel="import" href="../SignIn/sign-in.html">
+<link rel="import" href="../SignOut/sign-out.html">
 
 <link rel="stylesheet" href="app-global.css">
 
+<dom-module id="vi-responsive-style-module">
+    <template>
+        <link rel="stylesheet" href="StyleModules/responsive.css">
+    </template>
+</dom-module>
+
 <dom-module id="vi-app">
     <template>
-        <link rel="stylesheet" href="app.css" />
+        <style include="vi-responsive-style-module"></style>
+        <link rel="stylesheet" href="app.css">
         <iron-a11y-keys keys="[[keys]]" on-keys-pressed="_keysPressed"></iron-a11y-keys>
         <iron-media-query query="(max-width: 479px)" query-matches="{{isPhone}}"></iron-media-query>
         <iron-media-query query="(min-width: 480px) and (max-width: 839px)" query-matches="{{isTablet}}"></iron-media-query>
         <iron-media-query query="(min-width: 840px)" query-matches="{{isDesktop}}"></iron-media-query>
         <input id="catchautofill" style="position: fixed; visibility: hidden; left: -100vw;" />
         <vi-profiler service="[[service]]" hidden$="[[!isProfiling]]"></vi-profiler>
-        <template is="dom-if" if="[[sessionLost]]">
-            <div id="sessionLost" class="layout horizontal" on-tap="_reload">
-                <vi-icon source="Notification_Warning"></vi-icon>
-                <p>[[translations.SessionLost]]</p>
-                <button is="vi-button" class="self-center" label="[[translations.Reload]]"></button>
-            </div>
-        </template>
-        <template is="dom-if" if="[[!barebone]]" restamp>
-            <template is="dom-if" if="[[showMenu]]" restamp>
-                <vi-menu menu label="[[label]]" program-units="[[service.application.programUnits]]" active-program-unit="[[programUnit]]">
-                    <content select="[label]:not([label='sign-in'])"></content>
-                </vi-menu>
+        <dom-if if="[[sessionLost]]">
+            <template>
+                <div id="sessionLost" class="layout horizontal" on-tap="_reload">
+                    <vi-icon source="Notification_Warning"></vi-icon>
+                    <p>[[translations.SessionLost]]</p>
+                    <vi-button class="self-center" label="[[translations.Reload]]"></vi-button>
+                </div>
             </template>
-            <vi-spinner hidden$="[[!initializing]]"></vi-spinner>
-            <vi-app-route-presenter class="flex">
-                <vi-app-route route=""></vi-app-route>
-                <vi-app-route route="Query.:id" component="Vidyano.WebComponents.QueryPresenter"></vi-app-route>
-                <vi-app-route route=":programUnitName/Query.:id" component="Vidyano.WebComponents.QueryPresenter"></vi-app-route>
-                <vi-app-route route="PersistentObject.:id(/:objectId*)" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
-                <vi-app-route route=":programUnitName/PersistentObject.:id(/:objectId*)" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
-                <vi-app-route route=":programUnitName/FromAction/:fromActionId" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
-                <vi-app-route route=":programUnitName(/)" component="Vidyano.WebComponents.ProgramUnitPresenter"></vi-app-route>
-                <vi-app-route class="fit" route="SignIn(/:stateOrReturnUrl*)(/:returnUrl*)" allow-signed-out>
-                    <vi-sign-in label="[[label]]" logo="[[signInLogo]]">
-                        <content select="[sign-in-background]"></content>
-                        <content select="[sign-in-footer]"></content>
-                    </vi-sign-in>
-                </vi-app-route>
-                <vi-app-route route="SignOut(/)(:returnUrl*)" allow-signed-out>
-                    <vi-sign-out></vi-sign-out>
-                </vi-app-route>
-            </vi-app-route-presenter>
-        </template>
+        </dom-if>
+        <dom-if if="[[!barebone]]" restamp>
+            <template>
+                <dom-if if="[[showMenu]]" restamp>
+                    <template>
+                        <vi-menu menu label="[[label]]" program-units="[[service.application.programUnits]]" active-program-unit="[[programUnit]]">
+                            <slot name="menu-label"></slot>
+                        </vi-menu>
+                    </template>
+                </dom-if>
+                <vi-spinner hidden$="[[!initializing]]"></vi-spinner>
+                <vi-app-route-presenter class="flex">
+                    <vi-app-route route=""></vi-app-route>
+                    <vi-app-route route="Query.:id" component="Vidyano.WebComponents.QueryPresenter"></vi-app-route>
+                    <vi-app-route route=":programUnitName/Query.:id" component="Vidyano.WebComponents.QueryPresenter"></vi-app-route>
+                    <vi-app-route route="PersistentObject.:id(/:objectId*)" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
+                    <vi-app-route route=":programUnitName/PersistentObject.:id(/:objectId*)" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
+                    <vi-app-route route=":programUnitName/FromAction/:fromActionId" component="Vidyano.WebComponents.PersistentObjectPresenter"></vi-app-route>
+                    <vi-app-route route=":programUnitName(/)" component="Vidyano.WebComponents.ProgramUnitPresenter"></vi-app-route>
+                    <vi-app-route class="fit" route="SignIn(/:stateOrReturnUrl*)(/:returnUrl*)" allow-signed-out>
+                        <vi-sign-in label="[[label]]" logo="[[signInLogo]]">
+                            <slot name="sign-in-background"></slot>
+                            <slot name="sign-in-footer"></slot>
+                        </vi-sign-in>
+                    </vi-app-route>
+                    <vi-app-route route="SignOut(/)(:returnUrl*)" allow-signed-out>
+                        <vi-sign-out></vi-sign-out>
+                    </vi-app-route>
+                </vi-app-route-presenter>
+            </template>
+        </dom-if>
         <vi-app-config>
             <vi-persistent-object-attribute-config type="CommonMark" height="3"></vi-persistent-object-attribute-config>
             <vi-persistent-object-attribute-config type="Reference" height="attr.selectInPlace && attr.getTypeHint('inputtype', '', undefined, true) === 'radio' ? 0 : 1"></vi-persistent-object-attribute-config>
@@ -118,26 +131,33 @@
                     <vi-audit class="flex" persistent-object="[[persistentObject]]"></vi-audit>
                 </template>
             </vi-persistent-object-config>
-            <content select="vi-app-setting, vi-spinner-config, vi-persistent-object-config, vi-persistent-object-attribute-config, vi-persistent-object-tab-config, vi-program-unit-config, vi-query-config, vi-query-chart-config"></content>
+            <slot name="vi-app-config" slot="vi-app-config"></slot>
         </vi-app-config>
-        <template is="dom-if" if="[[service.application.hasManagement]]">
-            <vi-popup-menu id="viConfigure" ctrl-key context-menu-only></vi-popup-menu>
-        </template>
-        <template is="dom-if" if="[[updateAvailable]]">
-            <div id="update">
-                <div class="overlay" on-tap="_refreshForUpdateDismiss"></div>
-                <div class="message" on-tap="_refreshForUpdate">
-                    <span>[[translations.ApplicationOutdated]]</span>
-                    <span class="highlight">[[translations.ApplicationOutdatedRefresh]]</span>
+        <dom-if if="[[service.application.hasManagement]]">
+            <template>
+                <vi-popup-menu id="viConfigure" ctrl-key context-menu-only></vi-popup-menu>
+            </template>
+        </dom-if>
+        <dom-if if="[[updateAvailable]]">
+            <template>
+                <div id="update">
+                    <div class="overlay" on-tap="_refreshForUpdateDismiss"></div>
+                    <div class="message" on-tap="_refreshForUpdate">
+                        <span>[[translations.ApplicationOutdated]]</span>
+                        <span class="highlight">[[translations.ApplicationOutdatedRefresh]]</span>
+                    </div>
                 </div>
-            </div>
-        </template>
+            </template>
+        </dom-if>
     </template>
 </dom-module>
 
-<script src="app-color.js"></script>
-<script src="app-service-hooks.js"></script>
-<script src="app.js"></script>
+<dom-module id="vi-app-config">
+    <template>
+        <slot id="configs" name="vi-app-config"></slot>
+    </template>
+</dom-module>
+
 <script src="Config/app-setting.js"></script>
 <script src="Config/template-config.js"></script>
 <script src="Config/persistent-object-config.js"></script>
@@ -148,3 +168,6 @@
 <script src="Config/query-chart-config.js"></script>
 <script src="Config/spinner-config.js"></script>
 <script src="Config/app-config.js"></script>
+<script src="app-color.js"></script>
+<script src="app-service-hooks.js"></script>
+<script src="app.js"></script>

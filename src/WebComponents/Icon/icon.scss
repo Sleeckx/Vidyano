@@ -57,7 +57,7 @@
 
             &:not([disabled]) {
                 #box, #backdrop {
-                    fill: var(--vi-icon-selected-checked-color, --theme-color);
+                    fill: var(--vi-icon-selected-checked-color, var(--theme-color));
                 }
             }
 
@@ -76,7 +76,7 @@
     }
 
     &[source="SelectedRadio"] {
-        fill: var(--vi-icon-selected-unchecked-color, --theme-dark-border);
+        fill: var(--vi-icon-selected-unchecked-color, var(--theme-dark-border));
 
         &[is-selected ] {
             #check, #box {

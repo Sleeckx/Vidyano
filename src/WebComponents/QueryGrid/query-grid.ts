@@ -276,7 +276,7 @@ namespace Vidyano.WebComponents {
         }
     }
 
-    @Sortable.register({
+    @WebComponent.register({
         extends: "tbody"
     })
     export class QueryGridTableDataBody extends Sortable {
@@ -565,7 +565,7 @@ namespace Vidyano.WebComponents {
             this.table.grid.transform(transform, this._actions.host);
         }
 
-        private async _tap(e: TapEvent) {
+        private async _tap(e: Polymer.TapEvent) {
             if (!this.item)
                 return;
 
@@ -905,7 +905,7 @@ namespace Vidyano.WebComponents {
             this._setCollapsed(this.group.isCollapsed);
         }
 
-        private _tap(e: TapEvent) {
+        private _tap(e: Polymer.TapEvent) {
             e.stopPropagation();
             if (!this.group)
                 return;
@@ -933,7 +933,7 @@ namespace Vidyano.WebComponents {
             this._row.table.grid.async(() => Polymer.dom(this.host).appendChild(document.createElement("paper-ripple")));
         }
 
-        private _tap(e: TapEvent) {
+        private _tap(e: Polymer.TapEvent) {
             e.stopPropagation();
             if (!this.item)
                 return;
@@ -957,7 +957,7 @@ namespace Vidyano.WebComponents {
             this._row.table.grid.async(() => Polymer.dom(this.host).appendChild(document.createElement("paper-ripple")));
         }
 
-        private _tap(e: TapEvent) {
+        private _tap(e: Polymer.TapEvent) {
             e.stopPropagation();
 
             if (!this.item || (this.item.query.selectedItems && this.item.query.selectedItems.length > 0))
@@ -1175,7 +1175,7 @@ namespace Vidyano.WebComponents {
         query: Vidyano.Query;
         asLookup: boolean;
 
-        attached() {
+        connectedCallback() {
             if (QueryGrid.tableCache.length > 0 && !this._tableData) {
                 const tableCache = QueryGrid.tableCache.pop();
 
@@ -1194,11 +1194,11 @@ namespace Vidyano.WebComponents {
                 });
             }
 
-            super.attached();
+            super.connectedCallback();
         }
 
-        detached() {
-            super.detached();
+        disconnectedCallback() {
+            super.disconnectedCallback();
 
             if (this._tableData) {
                 const headerFragment = document.createDocumentFragment();
@@ -1246,14 +1246,15 @@ namespace Vidyano.WebComponents {
         }
 
         private _computeRowHeight(query: Vidyano.Query): number {
-            if (!this.isAttached || !this.query)
+            if (!this.isConnected || !this.query)
                 return;
 
             const config = this.app.configuration.getQueryConfig(query);
             const rowHeight = config && config.rowHeight ? config.rowHeight : parseInt(getComputedStyle(this).lineHeight);
 
-            this.customStyle["--query-grid--row-height"] = `${rowHeight}px`;
-            this.updateStyles();
+            this.updateStyles({
+                "--query-grid--row-height": `${rowHeight}px`
+            });
 
             return rowHeight;
         }
@@ -1283,7 +1284,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _initializingChanged() {
-            this.toggleClass("initializing", this.initializing);
+            this.classList.toggle("initializing", this.initializing);
         }
 
         private _viewportSizeChanged(viewportSize: ISize) {
@@ -1297,8 +1298,9 @@ namespace Vidyano.WebComponents {
         }
 
         private _headerControlsSizeChanged(size: ISize) {
-            this.customStyle["--vi-query-grid--data-offset"] = `${size.width}px`;
-            this.updateStyles();
+            this.updateStyles({
+                "--vi-query-grid--data-offset": `${size.width}px`
+            });
         }
 
         private _verticalScrollOffsetChanged(verticalScrollOffset: number) {
@@ -1315,8 +1317,9 @@ namespace Vidyano.WebComponents {
             if (this._actionMenu.open)
                 this._actionMenu.close();
 
-            this.customStyle["--query-grid-table--horizontal-scroll-offset"] = `-${this._horizontalScrollOffsetCurrent = horizontalScrollOffset}px`;
-            this.updateStyles();
+            this.updateStyles({
+                "--query-grid-table--horizontal-scroll-offset": `-${this._horizontalScrollOffsetCurrent = horizontalScrollOffset}px`
+            });
 
             [this._tableHeader, this._tableData, this._tableFooter].forEach(table => {
                 table.rows.forEach(row => {
@@ -1364,11 +1367,18 @@ namespace Vidyano.WebComponents {
 
             columns = columns.filter(c => !c.isHidden && !c.isPinned);
 
-            this.toggleAttribute("hidden", horizontalScrollOffset === 0, this.$.moreLeft);
-            this.toggleAttribute("hidden", !columns.some(c => c.calculatedOffset + this.headerControlsSize.width - horizontalScrollOffset > viewportSize.width), this.$.moreRight);
+            if (horizontalScrollOffset === 0)
+                this.$.moreLeft.setAttribute("hidden", "");
+            else
+                this.$.moreLeft.removeAttribute("hidden");
+
+            if (!columns.some(c => c.calculatedOffset + this.headerControlsSize.width - horizontalScrollOffset > viewportSize.width))
+                this.$.moreRight.setAttribute("hidden", "");
+            else
+                this.$.moreRight.removeAttribute("hidden");
 
             this._outOfViewColumnsWorkerHandle = window.requestIdleCallback(() => {
-                if (!this.isAttached)
+                if (!this.isConnected)
                     return;
 
                 const left: PopupMenuItem[] = [];
@@ -1387,8 +1397,7 @@ namespace Vidyano.WebComponents {
                 left.forEach(c => Polymer.dom(this.$.moreLeftContent).appendChild(c));
                 right.forEach(c => Polymer.dom(this.$.moreRightContent).appendChild(c));
 
-                Polymer.dom(this.$.moreLeftContent).flush();
-                Polymer.dom(this.$.moreRightContent).flush();
+                Polymer.flush();
             });
         }
 
@@ -1585,6 +1594,9 @@ namespace Vidyano.WebComponents {
         }
 
         private _updateVerticalSpacer(rowHeight: number, viewportSize: ISize) {
+            if (rowHeight === undefined || viewportSize === undefined)
+                return;
+
             this._requestAnimationFrame(() => {
                 const newHeight = this._calculateTotalItems() * rowHeight;
                 this.$.verticalSpacer.style.height = `${newHeight}px`;
@@ -1737,7 +1749,7 @@ namespace Vidyano.WebComponents {
                                 }
 
                                 if (!this._minimumColumnWidth)
-                                    this._minimumColumnWidth = parseInt(this.getComputedStyleValue("--vi-query-grid--minimum-column-width"));
+                                    this._minimumColumnWidth = parseInt(ShadyCSS.getComputedStyleValue(this, "--vi-query-grid--minimum-column-width"));
 
                                 width = Math.max(width + 10, this._minimumColumnWidth);
                                 if (width !== columnWidths[cell.column.name]) {
@@ -1787,8 +1799,9 @@ namespace Vidyano.WebComponents {
             });
         }
 
-        private _columnWidthsUpdated(e?: CustomEvent, detail?: { column: QueryGridColumn; columnWidth: number; save: boolean; }) {
-            if (!detail || detail.save) {
+        private _columnWidthsUpdated(e?: CustomEvent) {
+            const { column, columnWidth, save }: { column: QueryGridColumn; columnWidth: number; save: boolean; } = e.detail || {};
+            if (!e.detail || save) {
                 const columnWidthsStyle: string[] = [];
 
                 this._columns.forEach((col, index) => {
@@ -1799,15 +1812,15 @@ namespace Vidyano.WebComponents {
                 this._style.setStyle("ColumnWidths", ...columnWidthsStyle);
             }
 
-            if (detail && detail.column) {
-                const width = detail.save ? "" : detail.columnWidth + "px";
+            if (e.detail && column) {
+                const width = save ? "" : columnWidth + "px";
                 [this._tableData, this._tableFooter].forEach(table => {
                     table.rows.forEach(r => {
-                        const col = r.columns.find(c => c.column === detail.column);
+                        const col = r.columns.find(c => c.column === column);
                         if (col) {
                             col.cell.style.width = width;
 
-                            if (!detail.save)
+                            if (!save)
                                 col.host.classList.add("resizing");
                             else
                                 col.host.classList.remove("resizing");
@@ -1815,11 +1828,11 @@ namespace Vidyano.WebComponents {
                     });
                 });
 
-                if (detail.save)
+                if (save)
                     this._settings.save(false);
 
-                let columnOffset = detail.column.calculatedOffset + detail.columnWidth;
-                this._columns.slice(this._columns.indexOf(detail.column) + 1).forEach(c => {
+                let columnOffset = column.calculatedOffset + columnWidth;
+                this._columns.slice(this._columns.indexOf(column) + 1).forEach(c => {
                     c.calculatedOffset = columnOffset;
                     columnOffset += c.calculatedWidth;
                 });
@@ -1833,7 +1846,7 @@ namespace Vidyano.WebComponents {
 
         private _requestAnimationFrame(action: () => void): number {
             return requestAnimationFrame(() => {
-                if (!this.isAttached)
+                if (!this.isConnected)
                     return;
 
                 action();
@@ -1851,8 +1864,10 @@ namespace Vidyano.WebComponents {
             this._setIsReordering(true);
         }
 
-        private _dragEnd(e: CustomEvent, details: ISortableDragEndDetails) {
+        private _dragEnd(e: CustomEvent) {
             e.stopPropagation();
+
+            const detail: ISortableDragEndDetails = e.detail;
 
             if (!this.isReordering)
                 return;
@@ -1862,73 +1877,76 @@ namespace Vidyano.WebComponents {
             const item = this._reorderRow.item;
             this._reorderRow = null;
 
-            if (details.newIndex == null)
+            if (detail.newIndex == null)
                 return;
 
-            this._tableData.rows.splice(details.newIndex, 0, this._tableData.rows.splice(details.oldIndex, 1)[0]);
+            this._tableData.rows.splice(detail.newIndex, 0, this._tableData.rows.splice(detail.oldIndex, 1)[0]);
 
-            const before = details.newIndex > 0 ? (<QueryGridTableDataRow>this._tableData.rows[details.newIndex - 1]).item : null;
-            const after = this._tableData.rows.length > details.newIndex + 1 ? (<QueryGridTableDataRow>this._tableData.rows[details.newIndex + 1]).item : null;
+            const before = detail.newIndex > 0 ? (<QueryGridTableDataRow>this._tableData.rows[detail.newIndex - 1]).item : null;
+            const after = this._tableData.rows.length > detail.newIndex + 1 ? (<QueryGridTableDataRow>this._tableData.rows[detail.newIndex + 1]).item : null;
 
             this.query.reorder(before, item, after);
         }
 
-        private _itemSelect(e: CustomEvent, detail: { item: Vidyano.QueryResultItem; shift: boolean; ctrl: boolean; }) {
-            if (!detail.item)
+        private _itemSelect(e: CustomEvent) {
+            const { item, shift, ctrl }: { item: Vidyano.QueryResultItem; shift: boolean; ctrl: boolean; } = e.detail;
+            if (!item)
                 return;
 
-            const indexOfItem = this.query.items.indexOf(detail.item);
-            if (!detail.item.isSelected && this._lastSelectedItemIndex >= 0 && detail.shift) {
+            const indexOfItem = this.query.items.indexOf(item);
+            if (!item.isSelected && this._lastSelectedItemIndex >= 0 && shift) {
                 if (this.query.selectRange(Math.min(this._lastSelectedItemIndex, indexOfItem), Math.max(this._lastSelectedItemIndex, indexOfItem))) {
                     this._lastSelectedItemIndex = indexOfItem;
                     return;
                 }
             }
 
-            if (!detail.ctrl) {
+            if (!ctrl) {
                 if (this.query.selectAll.isAvailable && this.query.selectAll)
                     this.query.selectAll.allSelected = this.query.selectAll.inverse = false;
 
-                this.query.selectedItems = this.query.selectedItems.length > 1 || !detail.item.isSelected ? [detail.item] : [];
+                this.query.selectedItems = this.query.selectedItems.length > 1 || !item.isSelected ? [item] : [];
             }
             else
-                detail.item.isSelected = !detail.item.isSelected;
+                item.isSelected = !item.isSelected;
 
-            if (detail.item.isSelected)
+            if (item.isSelected)
                 this._lastSelectedItemIndex = indexOfItem;
         }
 
-        private async _itemActions(e: CustomEvent, detail: { row: QueryGridTableDataRow; host: HTMLElement; position: IPosition; }) {
-            if (!(detail.row.item instanceof Vidyano.QueryResultItem))
+        private async _itemActions(e: CustomEvent) {
+            const { row, position }: { row: QueryGridTableDataRow; position: IPosition; } = e.detail;
+            let { host }: { host: HTMLElement; } = e.detail;
+
+            if (!(row.item instanceof Vidyano.QueryResultItem))
                 return;
 
-            if (detail.row.item.getTypeHint("extraclass", "").split(" ").map(c => c.toUpperCase()).some(c => c === "DISABLED" || c === "READONLY"))
+            if (row.item.getTypeHint("extraclass", "").split(" ").map(c => c.toUpperCase()).some(c => c === "DISABLED" || c === "READONLY"))
                 return;
 
-            if (this.query.selectedItems.length > 0 && this.query.selectedItems.indexOf(detail.row.item) < 0) {
+            if (this.query.selectedItems.length > 0 && this.query.selectedItems.indexOf(row.item) < 0) {
                 this.query.selectAll.allSelected = this.query.selectAll.inverse = false;
-                this.query.selectedItems = [detail.row.item];
+                this.query.selectedItems = [row.item];
             }
 
-            const actions = (detail.row.item.query.actions || []).filter(a => a.isVisible && a.definition.selectionRule !== ExpressionParser.alwaysTrue && a.selectionRule(Math.max(1, this.query.selectedItems.length)));
+            const actions = (row.item.query.actions || []).filter(a => a.isVisible && a.definition.selectionRule !== ExpressionParser.alwaysTrue && a.selectionRule(Math.max(1, this.query.selectedItems.length)));
             if (actions.length === 0)
                 return;
 
-            let host = detail.host;
-            if (!host && detail.position) {
-                host = this.$$("#actionsAnchor");
+            if (!host && position) {
+                host = this.shadowRoot.querySelector("#actionsAnchor");
                 if (!host) {
                     host = document.createElement("div");
                     host.id = "actionsAnchor";
                     host.style.position = "fixed";
 
-                    Polymer.dom(this.root).appendChild(host);
+                    this.shadowRoot.appendChild(host);
                 }
                 else
                     host.removeAttribute("hidden");
 
-                host.style.left = `${detail.position.x}px`;
-                host.style.top = `${detail.position.y}px`;
+                host.style.left = `${position.x}px`;
+                host.style.top = `${position.y}px`;
             }
 
             actions.forEach(action => {
@@ -1940,25 +1958,27 @@ namespace Vidyano.WebComponents {
                 Polymer.dom(this._actionMenu).appendChild(button);
             });
 
-            Polymer.dom(this._actionMenu).flush();
+            Polymer.flush();
 
-            detail.row.host.setAttribute("hover", "");
+            row.host.setAttribute("hover", "");
             await this._actionMenu.popup(host);
-            if (host !== detail.host)
+            if (host !== host)
                 host.setAttribute("hidden", "");
 
             this._actionMenu.empty();
-            detail.row.host.removeAttribute("hover");
+            row.host.removeAttribute("hover");
         }
 
-        private _groupCollapsedChanged(e: CustomEvent, group: QueryResultItemGroup) {
+        private _groupCollapsedChanged(e: CustomEvent) {
+            const group: QueryResultItemGroup = e.detail;
+
             this._updateVerticalSpacer(this.rowHeight, this.viewportSize);
 
             this._lastUpdated = null;
             this._setCollapsedGroups(this.query.groupingInfo.groups.filter(group => group.isCollapsed));
         }
 
-        private _groupingToggleCollapse(e: TapEvent) {
+        private _groupingToggleCollapse(e: Polymer.TapEvent) {
             const collapse = (<PopupMenuItem>e.currentTarget).icon === "QueryGrid_Group_Collapse";
             this.query.groupingInfo.groups.forEach(g => g.isCollapsed = collapse);
 
@@ -1970,7 +1990,7 @@ namespace Vidyano.WebComponents {
             (<Scroller>this.$.scroller).scrollToTop();
         }
 
-        private _groupingRemove(e: TapEvent) {
+        private _groupingRemove(e: Polymer.TapEvent) {
             this.query.group("");
         }
 
@@ -1979,7 +1999,7 @@ namespace Vidyano.WebComponents {
                 !this.query || this.query.asLookup || this.asLookup)
                 return true;
 
-            let src = <HTMLElement>e.target;
+            let src = <HTMLElement>this.todo_checkEventTarget(e.target);
             while (src && src.tagName !== "TR")
                 src = src.parentElement;
 
@@ -2008,18 +2028,20 @@ namespace Vidyano.WebComponents {
             this._actionMenu.close();
         }
 
-        private _togglePin(e: CustomEvent, column: QueryGridColumn) {
+        private _togglePin(e: CustomEvent) {
             e.stopPropagation();
 
+            const column: QueryGridColumn = e.detail;
             column.isPinned = !column.isPinned;
             this._horizontalScrollOffset = 0;
 
             this._settings.save();
         }
 
-        private _hideColumn(e: CustomEvent, column: QueryGridColumn) {
+        private _hideColumn(e: CustomEvent) {
             e.stopPropagation();
 
+            const column: QueryGridColumn = e.detail;
             column.isHidden = true;
             this._settings.save();
         }

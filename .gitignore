@@ -219,6 +219,7 @@ ModelManifest.xml
 /src/Libs/paper-ripple/
 /src/Libs/pathjs/
 /src/Libs/polymer/
+/src/Libs/shadycss/
 /src/Libs/sortable/
 /src/Libs/tslib/
 /src/Libs/webcomponentsjs/

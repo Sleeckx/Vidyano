@@ -4,34 +4,49 @@
 
 <dom-module id="vi-persistent-object-attribute-translated-string">
     <template>
+        <style include="vi-persistent-object-attribute-style-module"></style>
         <link rel="stylesheet" href="persistent-object-attribute-translated-string.css" />
-        <template is="dom-if" if="[[!editing]]">
-            <template is="dom-if" if="[[!multiline]]">
-                <span sensitive$="[[sensitive]]">[[attribute.displayValue]]</span>
+        <dom-if if="[[!editing]]">
+            <template>
+                <dom-if if="[[!multiline]]">
+                    <template>
+                        <span sensitive$="[[sensitive]]">[[attribute.displayValue]]</span>
+                    </template>
+                </dom-if>
+                <dom-if if="[[multiline]]">
+                    <template>
+                        <vi-scroller>
+                            <pre sensitive$="[[sensitive]]">[[attribute.displayValue]]</pre>
+                        </vi-scroller>
+                    </template>
+                </dom-if>
             </template>
-            <template is="dom-if" if="[[multiline]]">
-                <vi-scroller>
-                    <pre sensitive$="[[sensitive]]">[[attribute.displayValue]]</pre>
-                </vi-scroller>
+        </dom-if>
+        <dom-if if="[[editing]]">
+            <template>
+                <vi-persistent-object-attribute-edit attribute="[[attribute]]" reverse-content$="[[multiline]]">
+                    <dom-if if="[[!multiline]]">
+                        <template>
+                            <input class="flex" value="{{value::input}}" type="text" on-blur="_editInputBlur" readonly$="[[readOnly]]" tabindex$="[[readOnlyTabIndex]]" placeholder="[[placeholder]]" sensitive$="[[sensitive]]">
+                        </template>
+                    </dom-if>
+                    <dom-if if="[[multiline]]">
+                        <template>
+                            <vi-scroller class="fit">
+                                <pre id="multiline" sensitive$="[[sensitive]]">[[attribute.value]]</pre>
+                            </vi-scroller>
+                        </template>
+                    </dom-if>
+                    <dom-if if="[[canShowDialog]]">
+                        <template>
+                            <button slot="button" on-tap="_showLanguagesDialog" tabindex="-1" hidden$="[[sensitive]]">
+                                <vi-icon source="TranslatedString"></vi-icon>
+                            </button>
+                        </template>
+                    </dom-if>
+                </vi-persistent-object-attribute-edit>
             </template>
-        </template>
-        <template is="dom-if" if="[[editing]]">
-            <vi-persistent-object-attribute-edit attribute="[[attribute]]" reverse-content$="[[multiline]]">
-                <template is="dom-if" if="[[!multiline]]">
-                    <input content class="flex" value="{{value::input}}" type="text" on-blur="_editInputBlur" readonly$="[[readOnly]]" tabindex$="[[readOnlyTabIndex]]" placeholder="[[placeholder]]" sensitive$="[[sensitive]]">
-                </template>
-                <template is="dom-if" if="[[multiline]]">
-                    <vi-scroller content class="fit">
-                        <pre id="multiline" sensitive$="[[sensitive]]">[[attribute.value]]</pre>
-                    </vi-scroller>
-                </template>
-                <template is="dom-if" if="[[canShowDialog]]">
-                    <button on-tap="_showLanguagesDialog" tabindex="-1" hidden$="[[sensitive]]">
-                        <vi-icon source="TranslatedString"></vi-icon>
-                    </button>
-                </template>
-            </vi-persistent-object-attribute-edit>
-        </template>
+        </dom-if>
     </template>
 </dom-module>
 
@@ -43,27 +58,37 @@
         </header>
         <main>
             <ul id="content">
-                <template is="dom-repeat" items="[[strings]]" as="string">
-                    <li>
-                        <label>[[string.label]]</label>
-                        <template is="dom-if" if="[[!multiline]]">
-                            <input value="{{string.value::input}}" type="text" readonly$="[[readonly]]" tabindex$="[[readOnlyTabIndex]]">
-                        </template>
-                        <template is="dom-if" if="[[multiline]]">
-                            <textarea rows="5" value="{{string.value::input}}"></textarea>
-                        </template>
-                    </li>
-                </template>
+                <dom-repeat items="[[strings]]" as="string">
+                    <template>
+                        <li>
+                            <label>[[string.label]]</label>
+                            <dom-if if="[[!multiline]]">
+                                <template>
+                                    <input value="{{string.value::input}}" type="text" readonly$="[[readonly]]" tabindex$="[[readOnlyTabIndex]]">
+                                </template>
+                            </dom-if>
+                            <dom-if if="[[multiline]]">
+                                <template>
+                                    <textarea rows="5" value="{{string.value::input}}"></textarea>
+                                </template>
+                            </dom-if>
+                        </li>
+                    </template>
+                </dom-repeat>
             </ul>
         </main>
         <footer class="horizontal layout end-justified">
-            <template is="dom-if" if="[[!readonly]]">
-                <button is="vi-button" on-tap="_ok" label="[[translateMessage('OK', isAttached)]]"></button>
-                <button is="vi-button" on-tap="cancel" inverse label="[[translateMessage('Cancel', isAttached)]]"></button>
-            </template>
-            <template is="dom-if" if="[[readonly]]">
-                <button is="vi-button" on-tap="_ok" label="[[translateMessage('Close', isAttached)]]"></button>
-            </template>
+            <dom-if if="[[!readonly]]">
+                <template>
+                    <vi-button on-tap="_ok" label="[[translateMessage('OK', isConnected)]]"></vi-button>
+                    <vi-button on-tap="cancel" inverse label="[[translateMessage('Cancel', isConnected)]]"></vi-button>
+                </template>
+            </dom-if>
+            <dom-if if="[[readonly]]">
+                <template>
+                    <vi-button on-tap="_ok" label="[[translateMessage('Close', isConnected)]]"></vi-button>
+                </template>
+            </dom-if>
         </footer>
     </template>
 </dom-module>

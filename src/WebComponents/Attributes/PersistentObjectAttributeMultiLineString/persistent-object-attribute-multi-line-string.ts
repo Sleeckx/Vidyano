@@ -1,9 +1,13 @@
 namespace Vidyano.WebComponents.Attributes {
     "use strict";
 
-    @PersistentObjectAttribute.register({
+    @WebComponent.register({
         properties: {
             maxlength: Number,
+            useCodeMirror: {
+                type: Boolean,
+                computed: "_computeUseCodeMirror(codeMirror, sensitive)"
+            },
             codeMirror: {
                 type: String,
                 computed: "_computeCodeMirror(attribute)",
@@ -44,7 +48,7 @@ namespace Vidyano.WebComponents.Attributes {
             return readOnly || !editing;
         }
 
-        private _useCodeMirror(codeMirror: boolean, sensitive: boolean): boolean {
+        private _computeUseCodeMirror(codeMirror: boolean, sensitive: boolean): boolean {
             return codeMirror && !sensitive;
         }
     }

@@ -19,28 +19,32 @@
         <div class="vertical layout fit">
             <header id="dataHeaderHost" class="horizontal layout">
                 <div class="horizontal layout relative" id="headerControls">
-                    <template is="dom-if" if="[[hasGrouping]]">
-                        <vi-popup-menu id="grouping" disabled$="[[isBusy]]">
-                            <button is="vi-button" header icon="QueryGrid_Group" inverse disabled$="[[isBusy]]"></button>
-                            <vi-popup-menu-item icon="QueryGrid_Group_Collapse" label="Collapse all" on-tap="_groupingToggleCollapse"></vi-popup-menu-item>
-                            <vi-popup-menu-item icon="QueryGrid_Group_Expand" label="Expand all" on-tap="_groupingToggleCollapse"></vi-popup-menu-item>
-                            <vi-popup-menu-item-separator></vi-popup-menu-item-separator>
-                            <vi-popup-menu-item icon="Remove" label="Remove grouping" on-tap="_groupingRemove"></vi-popup-menu-item>
-                        </vi-popup-menu>
-                    </template>
+                    <dom-if if="[[hasGrouping]]">
+                        <template>
+                            <vi-popup-menu id="grouping" disabled$="[[isBusy]]">
+                                <vi-button header icon="QueryGrid_Group" inverse disabled$="[[isBusy]]"></vi-button>
+                                <vi-popup-menu-item icon="QueryGrid_Group_Collapse" label="Collapse all" on-tap="_groupingToggleCollapse"></vi-popup-menu-item>
+                                <vi-popup-menu-item icon="QueryGrid_Group_Expand" label="Expand all" on-tap="_groupingToggleCollapse"></vi-popup-menu-item>
+                                <vi-popup-menu-item-separator></vi-popup-menu-item-separator>
+                                <vi-popup-menu-item icon="Remove" label="Remove grouping" on-tap="_groupingRemove"></vi-popup-menu-item>
+                            </vi-popup-menu>
+                        </template>
+                    </dom-if>
                     <vi-query-grid-select-all query="[[query]]" hidden$="[[!canSelect]]"></vi-query-grid-select-all>
-                    <template is="dom-if" if="[[canFilter]]">
-                        <vi-query-grid-filters id="filters" query="[[query]]"></vi-query-grid-filters>
-                    </template>
+                    <dom-if if="[[canFilter]]">
+                        <template>
+                            <vi-query-grid-filters id="filters" query="[[query]]"></vi-query-grid-filters>
+                        </template>
+                    </dom-if>
                     <vi-size-tracker size="{{headerControlsSize}}" trigger-zero></vi-size-tracker>
                 </div>
                 <div id="dataHeaderHostColumns">
                     <vi-popup id="moreLeft" class="more left" hidden>
-                        <button is="vi-button" header inverse icon="ChevronLeft"></button>
+                        <vi-button header inverse icon="ChevronLeft"></vi-button>
                         <vi-scroller id="moreLeftContent" content no-horizontal></vi-scroller>
                     </vi-popup>
                     <vi-popup id="moreRight" class="more right" hidden>
-                        <button is="vi-button" header inverse icon="ChevronRight"></button>
+                        <vi-button header inverse icon="ChevronRight"></vi-button>
                         <vi-scroller id="moreRightContent" content no-horizontal></vi-scroller>
                     </vi-popup>
                 </div>

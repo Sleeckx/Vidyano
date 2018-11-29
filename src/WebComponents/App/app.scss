@@ -27,18 +27,6 @@
         }
     }
 
-    &[is-phone] ::content [hide-phone] {
-        display: none !important;
-    }
-
-    &[is-tablet] ::content [hide-tablet] {
-        display: none !important;
-    }
-
-    &[is-desktop] ::content [hide-desktop] {
-        display: none !important;
-    }
-
     &[is-profiling] {
         padding-top: var(--theme-h1);
 
@@ -91,10 +79,10 @@
 
     [dialog] {
         @include layout-vertical();
-        @apply(--theme-shadow);
         background-color: white;
         max-height: 90vh;
         max-width: 90vw;
+        box-shadow: var(--theme-box-shadow);
 
         &[dragging] {
             @include noSelection();

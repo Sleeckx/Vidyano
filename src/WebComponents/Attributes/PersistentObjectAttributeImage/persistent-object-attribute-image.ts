@@ -1,7 +1,7 @@
 namespace Vidyano.WebComponents.Attributes {
     "use strict";
 
-    @PersistentObjectAttribute.register({
+    @WebComponent.register({
         properties: {
             hasValue: {
                 type: Boolean,
@@ -10,6 +10,10 @@ namespace Vidyano.WebComponents.Attributes {
             image: {
                 type: String,
                 computed: "_computeImage(value)"
+            },
+            canOpen: {
+                type: Boolean,
+                computed: "_computeCanOpen(hasValue, sensitive)"
             }
         }
     })
@@ -28,19 +32,19 @@ namespace Vidyano.WebComponents.Attributes {
             }
         }
 
-        detached() {
+        disconnectedCallback() {
             if (this._pasteListener) {
                 document.removeEventListener("paste", this._pasteListener, false);
                 this._pasteListener = null;
             }
 
-            super.detached();
+            super.disconnectedCallback();
         }
 
         private _change(e: Event) {
             this.attribute.parent.queueWork(() => {
                 return new Promise((resolve, reject) => {
-                    const input = <HTMLInputElement>e.target;
+                    const input = <HTMLInputElement>this.todo_checkEventTarget(e.target);
                     if (input.files && input.files.length === 1) {
                         const fr = new FileReader();
                         fr.readAsDataURL(input.files[0]);
@@ -67,7 +71,7 @@ namespace Vidyano.WebComponents.Attributes {
             return value ? value.asDataUri() : "";
         }
 
-        private _canOpen(hasValue: boolean, sensitive: boolean): boolean {
+        private _computeCanOpen(hasValue: boolean, sensitive: boolean): boolean {
             return hasValue && !sensitive;
         }
 
@@ -114,7 +118,7 @@ namespace Vidyano.WebComponents.Attributes {
         }
     }
 
-    @Dialog.register({
+    @WebComponent.register({
         properties: {
             label: String,
             src: String,
@@ -133,9 +137,9 @@ namespace Vidyano.WebComponents.Attributes {
         }
 
         private _showImage(headerSize: Vidyano.WebComponents.ISize, footerSize: Vidyano.WebComponents.ISize) {
-            this.customStyle["--vi-persistent-object-attribute-image-dialog--max-height"] = `${headerSize.height + footerSize.height}px`;
-
-            this.updateStyles();
+            this.updateStyles({
+                "--vi-persistent-object-attribute-image-dialog--max-height": `${headerSize.height + footerSize.height}px`
+            });
 
             if (!this._updated) {
                 this.$.img.removeAttribute("hidden");

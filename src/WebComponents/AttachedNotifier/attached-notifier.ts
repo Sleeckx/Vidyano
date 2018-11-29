@@ -13,15 +13,15 @@
         private _wasAttached;
         oneTime: boolean;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
 
             if (this._wasAttached && this.oneTime)
                 return;
 
             this._wasAttached = true;
             this.fire("attached", { id: this.id }, {
-                onNode: this,
+                node: this,
                 bubbles: false
             });
         }

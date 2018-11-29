@@ -76,7 +76,7 @@
             return !!toolTip;
         }
 
-        private _showTooltip(e: TapEvent) {
+        private _showTooltip(e: Polymer.TapEvent) {
             this.app.showMessageDialog({
                 title: this.attribute.label,
                 titleIcon: "Info",

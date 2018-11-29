@@ -36,14 +36,14 @@
         private _cacheEntry: QueryAppCacheEntry;
         query: Vidyano.Query;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
 
             this._queryChanged();
         }
 
         private _queryChanged() {
-            if (this.query && this.isAttached) {
+            if (this.query && this.isConnected) {
                 this._cacheEntry = <QueryAppCacheEntry>this.app.cache(new QueryAppCacheEntry(this.query.id));
                 this._cacheEntry.query = this.query;
             }

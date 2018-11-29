@@ -55,6 +55,10 @@
                 notify: true,
                 value: ""
             },
+            canAuthenticate: {
+                type: Boolean,
+                computed: "_computeCanAuthenticate(isBusy, userName, password, twoFactorCode)"
+            },
             hasOther: {
                 type: Boolean,
                 readOnly: true
@@ -124,7 +128,8 @@
         staySignedIn: boolean;
         twoFactorCode: string;
 
-        private async _activate(e: CustomEvent, { parameters }: { parameters: ISignInRouteParameters; }) {
+        private async _activate(e: CustomEvent) {
+            const { parameters }: { parameters: ISignInRouteParameters; } = e.detail;
             if (parameters.stateOrReturnUrl) {
                 if (/^(register)$/i.test(parameters.stateOrReturnUrl)) {
                     this._setReturnUrl(decodeURIComponent(parameters.returnUrl || ""));
@@ -263,11 +268,11 @@
 
         private _stepChanged(step: Step, oldStep: Step) {
             if (oldStep)
-                (Polymer.dom(this.root).querySelector(`section.${oldStep}`) as HTMLElement).classList.remove("active");
+                (this.shadowRoot.querySelector(`section.${oldStep}`) as HTMLElement).classList.remove("active");
 
-            (Polymer.dom(this.root).querySelector(`section.${step}`) as HTMLElement).classList.add("active");
+            (this.shadowRoot.querySelector(`section.${step}`) as HTMLElement).classList.add("active");
 
-            Polymer.dom(this).flush();
+            Polymer.flush();
             this._focusElement(step as string);
         }
 
@@ -350,7 +355,7 @@
             }
         }
 
-        private _canAuthenticate(isBusy: boolean, userName: string, password: string, twoFactorCode: string): boolean {
+        private _computeCanAuthenticate(isBusy: boolean, userName: string, password: string, twoFactorCode: string): boolean {
             if (isBusy)
                 return false;
 
@@ -412,7 +417,7 @@
             }
         }
 
-        private _authenticateExternal(e: TapEvent | string) {
+        private _authenticateExternal(e: Polymer.TapEvent | string) {
             const key = typeof e === "string" ? e : e.model.provider.key;
 
             this._setIsBusy(true);
@@ -442,7 +447,7 @@
             }
         }
 
-        private _computeSaveInitialLabel(po: Vidyano.PersistentObject): string {
+        private _getInitialSaveLabel(po: Vidyano.PersistentObject): string {
             if (!po)
                 return null;
 
@@ -461,7 +466,7 @@
             } : null);
         }
 
-        private _providers(providers: { [name: string]: IProviderParameters }): { name: string; parameters: IProviderParameters; }[] {
+        private _getProviders(providers: { [name: string]: IProviderParameters }): { name: string; parameters: IProviderParameters; }[] {
             return Object.keys(providers).filter(key => key !== "Vidyano").map(key => {
                 return {
                     key: key,

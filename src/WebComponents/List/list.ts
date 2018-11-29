@@ -12,14 +12,14 @@ namespace Vidyano.WebComponents {
             }
         },
         observers: [
-            "_hookIronListToScroller(parentScroller, isAttached)"
+            "_hookIronListToScroller(parentScroller, isConnected)"
         ]
     })
     export class List extends WebComponent {
         parentScroller: boolean;
 
-        private _hookIronListToScroller(parentScroller: boolean, isAttached: boolean) {
-            if (!isAttached)
+        private _hookIronListToScroller(parentScroller: boolean, isConnected: boolean) {
+            if (!isConnected)
                 return;
 
             if (parentScroller) {
@@ -28,10 +28,10 @@ namespace Vidyano.WebComponents {
             }
 
             this.async(() => {
-                if (parentScroller !== this.parentScroller || !this.isAttached)
+                if (parentScroller !== this.parentScroller || !this.isConnected)
                     return;
 
-                const list = Polymer.dom(this.root).querySelector("#list");
+                const list = this.shadowRoot.querySelector("#list");
                 const scroller = <any>this.findParent(e => e instanceof Vidyano.WebComponents.Scroller, list);
                 (<any>list).scrollTarget = scroller.$.wrapper;
 
@@ -41,7 +41,7 @@ namespace Vidyano.WebComponents {
 
         private _bindIronListDataHost() {
             // Workaround for making sure events are delegated to the correct host
-            const list = Polymer.dom(this.root).querySelector("#list");
+            const list = this.shadowRoot.querySelector("#list");
             if (list["dataHost"] && list["dataHost"]["_rootDataHost"] === this) {
                 const dataHostParent = this.findParent(e => e["dataHost"]);
                 if (dataHostParent)
@@ -50,7 +50,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _sizeChanged() {
-            const list = <PolymerBase>Polymer.dom(this.root).querySelector("#list");
+            const list = <PolymerBase>this.shadowRoot.querySelector("#list");
             if (!list || !list.fire)
                 return;
 

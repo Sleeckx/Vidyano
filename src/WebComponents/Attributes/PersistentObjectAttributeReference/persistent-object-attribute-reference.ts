@@ -1,7 +1,7 @@
 namespace Vidyano.WebComponents.Attributes {
     "use strict";
 
-    @PersistentObjectAttribute.register({
+    @WebComponent.register({
         properties: {
             href: String,
             canClear: {
@@ -22,8 +22,7 @@ namespace Vidyano.WebComponents.Attributes {
             },
             objectId: {
                 type: String,
-                observer: "_objectIdChanged",
-                value: null
+                observer: "_objectIdChanged"
             },
             selectInPlace: {
                 type: Boolean,
@@ -34,6 +33,10 @@ namespace Vidyano.WebComponents.Attributes {
                 type: Boolean,
                 computed: "_computeSelectInPlaceAsRadio(attribute, sensitive)"
             },
+            canOpenSelect: {
+                type: Boolean,
+                computed: "_computeCanOpenSelect(readOnly, options)"
+            },
             orientation: {
                 type: String,
                 computed: "_computeOrientation(attribute)"
@@ -41,10 +44,14 @@ namespace Vidyano.WebComponents.Attributes {
             target: {
                 type: String,
                 computed: "_computeTarget(attribute, href)"
+            },
+            title: {
+                type: String,
+                computed: "_computeTitle(attribute.displayValue, sensitive)"
             }
         },
         observers: [
-            "_update(attribute.isReadOnly, sensitive, isAttached)"
+            "_update(attribute.isReadOnly, sensitive, isConnected)"
         ]
     })
     export class PersistentObjectAttributeReference extends WebComponents.Attributes.PersistentObjectAttribute {
@@ -56,8 +63,8 @@ namespace Vidyano.WebComponents.Attributes {
         href: string;
         filter: string;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
             this._update();
         }
 
@@ -115,7 +122,7 @@ namespace Vidyano.WebComponents.Attributes {
             this._update();
         }
 
-        private _browse(e: TapEvent) {
+        private _browse(e: Polymer.TapEvent) {
             this.attribute.lookup.textSearch = "";
             this._browseReference(false, true);
         }
@@ -151,7 +158,7 @@ namespace Vidyano.WebComponents.Attributes {
         }
 
         private _update() {
-            if (!this.isAttached)
+            if (!this.isConnected)
                 return;
 
             const hasReference = this.attribute instanceof Vidyano.PersistentObjectAttributeWithReference;
@@ -172,7 +179,7 @@ namespace Vidyano.WebComponents.Attributes {
         }
 
         private _openSelect() {
-            const selectInPlace = <Select>Polymer.dom(this.root).querySelector("#selectInPlace");
+            const selectInPlace = <Select>this.shadowRoot.querySelector("#selectInPlace");
             selectInPlace.open();
         }
 
@@ -210,10 +217,6 @@ namespace Vidyano.WebComponents.Attributes {
 
         private _computeTitle(displayValue: string, sensitive: boolean): string {
             return !sensitive ? displayValue : "";
-        }
-
-        private _isRadioChecked(optionKey: string, objectId: string): boolean {
-            return optionKey === objectId;
         }
 
         private _radioChanged(e: CustomEvent) {

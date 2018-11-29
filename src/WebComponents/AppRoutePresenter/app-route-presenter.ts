@@ -12,10 +12,10 @@
     export class AppRoutePresenter extends WebComponent {
         notFound: boolean;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
 
-            this.fire("app-route-presenter-attached", null);
+            this.fire("app-route-presenter-attached");
         }
     }
 }

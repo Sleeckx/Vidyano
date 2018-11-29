@@ -28,13 +28,13 @@ namespace Vidyano.WebComponents {
         serviceHooks: string;
         cookiePrefix: string;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
 
             if (this.app)
                 return;
 
-            const template = Polymer.dom(this).querySelector("template[is='dom-template']");
+            const template = this.querySelector("template[is='dom-template']");
             if (!template) {
                 console.error("Website requires a valid template.");
                 return;
@@ -55,7 +55,7 @@ namespace Vidyano.WebComponents {
 
             // NOTE: Hack to initialize app under website
             this["_app"] = new Vidyano.WebComponents.App();
-            this.isAttached = !(this.isAttached = !this.isAttached);
+            this.isConnected = !(this.isConnected = !this.isConnected);
 
             this.app.uri = this.serviceUri;
             this.app.noMenu = true;
@@ -65,7 +65,7 @@ namespace Vidyano.WebComponents {
 
             Polymer.dom(config).appendChild(template);
             Polymer.dom(this.app).appendChild(config);
-            Polymer.dom(this).appendChild(this.app);
+            this.appendChild(this.app);
         }
 
         private _cookiePrefixChanged(cookiePrefix: string) {

@@ -64,6 +64,10 @@
             editLabel: {
                 type: String,
                 computed: "query.filters.actions.Edit.displayName"
+            },
+            saveCurrentLabel: {
+                type: String,
+                computed: "_computeCurrentFilterSaveLabel(currentFilter)"
             }
         },
         forwardObservers: [
@@ -119,11 +123,11 @@
             return result;
         }
 
-        private _catchGroupTap(e: TapEvent) {
+        private _catchGroupTap(e: Polymer.TapEvent) {
             e.stopPropagation();
         }
 
-        private _nonGroupName(name: string): string {
+        private _filterNonGroupName(name: string): string {
             if (!name)
                 return name;
 
@@ -168,7 +172,7 @@
             this.query.filters.currentFilter = null;
         }
 
-        private _load(e: TapEvent) {
+        private _load(e: Polymer.TapEvent) {
             this.queryFilters.currentFilter = <Vidyano.QueryFilter>e.model.filter.filter;
         }
 
@@ -180,12 +184,12 @@
             this.query.filters.save();
         }
 
-        private async _edit(e: TapEvent) {
+        private async _edit(e: Polymer.TapEvent) {
             const filter = <Vidyano.QueryFilter>e.model.filter.filter;
             this.app.showDialog(new Vidyano.WebComponents.QueryGridFilterDialog(this.query.filters, filter));
         }
 
-        private async _delete(e: TapEvent) {
+        private async _delete(e: Polymer.TapEvent) {
             const filter = <Vidyano.QueryFilter>e.model.filter.filter;
 
             const result = await this.app.showMessageDialog({
@@ -202,10 +206,6 @@
 
         private _showUserFilterSeparator(canReset: boolean, canSave: boolean, canSaveAs: boolean): boolean {
             return canReset || canSave || canSaveAs;
-        }
-
-        private _showLockedFilterSeparator(canReset: boolean, canSave: boolean, canSaveAs: boolean, userFilters: IQueryFilter[]): boolean {
-            return canReset || canSave || canSaveAs || (!!userFilters && userFilters.length > 0);
         }
 
         private _hasGroupName(filter: IQueryFilter): boolean {

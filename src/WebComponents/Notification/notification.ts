@@ -20,6 +20,10 @@
                 computed: "_computeText(serviceObject.notification)",
                 value: null
             },
+            inlineText: {
+                type: String,
+                computed: "_computeInlineText(text)"
+            },
             hidden: {
                 type: Boolean,
                 reflectToAttribute: true,
@@ -56,7 +60,7 @@
         }
 
         private _moreInfo(e: Event) {
-            if (!this.isOverflowing || (<HTMLElement>e.target).tagName === "A")
+            if (!this.isOverflowing || (<HTMLElement>this.todo_checkEventTarget(e.target)).tagName === "A")
                 return;
 
             let header: string;
@@ -130,7 +134,7 @@
             return html;
         }
 
-        private _textInline(text: string): string {
+        private _computeInlineText(text: string): string {
             return text && text.replace(/<br>/g, " ");
         }
 

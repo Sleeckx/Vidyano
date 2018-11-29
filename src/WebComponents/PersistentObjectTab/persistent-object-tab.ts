@@ -41,16 +41,13 @@ namespace Vidyano.WebComponents {
         tab: Vidyano.PersistentObjectAttributeTab;
         autofocus: boolean;
 
-        detached() {
-            super.detached();
+        disconnectedCallback() {
+            super.disconnectedCallback();
 
             this._attributePresenters = this._autofocusTarget = null;
         }
 
         private _computeColumns(size: ISize, defaultColumnCount: number): number {
-            if (defaultColumnCount)
-                return defaultColumnCount;
-
             if (size.width >= 1500)
                 return 4;
             else if (size.width > 1000)
@@ -66,14 +63,14 @@ namespace Vidyano.WebComponents {
                 this._focusElement(this._autofocusTarget);
         }
 
-        private _attributeLoaded(e: CustomEvent, detail: { attribute: Vidyano.PersistentObjectAttribute }) {
+        private _attributeLoaded(e: CustomEvent) {
             if (!this.autofocus)
                 return;
 
             if (!this._attributePresenters)
                 this._attributePresenters = [];
 
-            const presenter = <Vidyano.WebComponents.PersistentObjectAttributePresenter>e.target;
+            const presenter = <Vidyano.WebComponents.PersistentObjectAttributePresenter>e.composedPath()[0];
             this._attributePresenters.push(presenter);
 
             if (this._attributePresenters.length < this.tab.attributes.length)
@@ -94,7 +91,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _innerSizeChanged(size: ISize) {
-            this.fire("vi-persistent-object-tab-inner-size-changed", { size: size }, { bubbles: true});
+            this.fire("vi-persistent-object-tab-inner-size-changed", size, { bubbles: true});
         }
 
         _viConfigure(actions: IConfigurableAction[]) {

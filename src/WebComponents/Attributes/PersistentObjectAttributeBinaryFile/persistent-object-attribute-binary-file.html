@@ -1,25 +1,34 @@
 <dom-module id="vi-persistent-object-attribute-binary-file">
     <template>
+        <style include="vi-persistent-object-attribute-style-module"></style>
         <link rel="stylesheet" href="persistent-object-attribute-binary-file.css" />
-        <template is="dom-if" if="[[!editing]]">
-            <span sensitive$="[[sensitive]]">[[fileName]]</span>
-        </template>
-        <template is="dom-if" if="[[editing]]">
-            <vi-persistent-object-attribute-edit attribute="[[attribute]]">
-                <input content class="flex" value="{{fileName}}" type="text" readonly placeholder="[[placeholder]]" sensitive$="[[sensitive]]">
-                <template is="dom-if" if="[[!readOnly]]">
-                    <div class="button browse" on-change="_change">
-                        <vi-icon source="FileUpload"></vi-icon>
-                        <content select="[upload]"></content>
-                    </div>
-                    <template is="dom-if" if="[[canClear]]" restamp>
-                        <button on-tap="_clear" tabindex="-1">
-                            <vi-icon source="Remove"></vi-icon>
-                        </button>
-                    </template>
-                </template>
-            </vi-persistent-object-attribute-edit>
-        </template>
+        <dom-if if="[[!editing]]">
+            <template>
+                <span sensitive$="[[sensitive]]">[[fileName]]</span>
+            </template>
+        </dom-if>
+        <dom-if if="[[editing]]">
+            <template>
+                <vi-persistent-object-attribute-edit attribute="[[attribute]]">
+                    <input class="flex" value="{{fileName}}" type="text" readonly placeholder="[[placeholder]]" sensitive$="[[sensitive]]">
+                    <dom-if if="[[!readOnly]]">
+                        <template>
+                            <div class="browse" slot="button" on-change="_change">
+                                <vi-icon source="FileUpload"></vi-icon>
+                                <slot name="upload"></slot>
+                            </div>
+                            <dom-if if="[[canClear]]" restamp>
+                                <template>
+                                    <button slot="button" on-tap="_clear" tabindex="-1">
+                                        <vi-icon source="Remove"></vi-icon>
+                                    </button>
+                                </template>
+                            </dom-if>
+                        </template>
+                    </dom-if>
+                </vi-persistent-object-attribute-edit>
+            </template>
+        </dom-if>
     </template>
 </dom-module>
 

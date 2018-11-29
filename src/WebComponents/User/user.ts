@@ -14,7 +14,7 @@ namespace Vidyano.WebComponents {
             },
             signInLabel: {
                 type: String,
-                computed: "_computeSignInLabel(isAttached, collapsed)"
+                computed: "_computeSignInLabel(isConnected, collapsed)"
             },
             hasSensitive: {
                 type: Boolean,
@@ -57,8 +57,8 @@ namespace Vidyano.WebComponents {
         readonly hasProfiler: boolean; private _setHasProfiler: (val: boolean) => void;
         readonly userName: string; private _setUserName: (val: string) => void;
 
-        private _computeSignInLabel(isAttached: boolean, collapsed: boolean): string {
-            if (!isAttached)
+        private _computeSignInLabel(isConnected: boolean, collapsed: boolean): string {
+            if (!isConnected)
                 return;
 
             return collapsed ? "": this.translateMessage("SignIn");

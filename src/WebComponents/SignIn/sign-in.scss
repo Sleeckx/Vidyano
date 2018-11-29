@@ -161,7 +161,7 @@
             .actions {
                 padding-top: var(--theme-h3);
 
-                button {
+                vi-button {
                     padding: 0 var(--theme-h3);
                     line-height: var(--theme-h2);
 
@@ -178,7 +178,7 @@
                 background-color: #eee;
                 margin-bottom: var(--theme-h4);
 
-                h3, button {
+                h3, vi-button {
                     font-weight: 300;
                     font-size: 13px;
                 }
@@ -364,11 +364,9 @@
         }
     }
 
-    footer ::content {
-        [sign-in-footer] {
-            max-width: 100vw;
-            width: 400px;
-        }
+    ::slotted([slot="sign-in-footer"]) {
+        max-width: 100vw;
+        width: 400px;
     }
 
     &[is-desktop], &[is-tablet] {
@@ -391,10 +389,8 @@
         }
     }
 
-    footer ::content {
-        [sign-in-footer] {
-            width: auto !important;
-        }
+    ::slotted([slot="sign-in-footer"]) {
+        width: auto !important;
     }
 }
 

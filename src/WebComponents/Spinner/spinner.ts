@@ -9,33 +9,26 @@
             }
         },
         observers: [
-            "_updateColor(color, isAttached)"
+            "_updateColor(color, isConnected)"
         ]
     })
     export class Spinner extends WebComponent {
-        private spinnerConfig: SpinnerConfig;
+        private static _spinnerConfig: SpinnerConfig;
 
-        attached() {
-            super.attached();
+        static get template() {
+            if (typeof Spinner._spinnerConfig === "undefined")
+                Spinner._spinnerConfig = window.app.configuration.getSpinnerConfig();
 
-            if (typeof this.spinnerConfig === "undefined") {
-                this.spinnerConfig = this.app.configuration.getSpinnerConfig();
-                if (this.spinnerConfig) {
-                    Polymer.dom(this.root).appendChild(this.spinnerConfig.stamp(null));
-                }
-                else {
-                    const template = <PolymerTemplate><any>this.$.default;
-                    Polymer.dom(this.root).appendChild(template.stamp(null).root);
-                }
-            }
+            if (Spinner._spinnerConfig)
+                return Spinner._spinnerConfig.template.cloneNode(true);
+
+            return Polymer.DomModule.import('vi-spinner', 'template');
         }
 
-        private _updateColor(color: string, isAttached: boolean) {
-            if (!isAttached)
-                return;
-
-            this.customStyle["--vi-spinner-color"] = color;
-            this.updateStyles();
+        private _updateColor(color: string, isConnected: boolean) {
+            this.updateStyles({
+                "--vi-spinner-color": color
+            });
         }
     }
 }

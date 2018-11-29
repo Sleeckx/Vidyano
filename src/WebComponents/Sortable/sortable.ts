@@ -9,6 +9,41 @@ namespace Vidyano.WebComponents {
         oldIndex: number;
     }
 
+    @WebComponent.registerAbstract({
+        properties: {
+            "group": {
+                type: String,
+                reflectToAttribute: true,
+            },
+            "filter": {
+                type: String,
+                reflectToAttribute: true
+            },
+            "draggableItems": {
+                type: String,
+                reflectToAttribute: true
+            },
+            "handle": {
+                type: String,
+                reflectToAttribute: true
+            },
+            "isDragging": {
+                type: Boolean,
+                reflectToAttribute: true,
+                readOnly: true
+            },
+            "isGroupDragging": {
+                type: Boolean,
+                reflectToAttribute: true,
+                readOnly: true
+            },
+            "enabled": { // Use enabled before disabled to prevent IE from blocking all events
+                type: Boolean,
+                reflectToAttribute: true,
+                observer: "_enabledChanged"
+            }
+        }
+    })
     export abstract class Sortable extends WebComponent {
         private _sortable: ISortable;
         readonly isDragging: boolean; private _setIsDragging: (isDragging: boolean) => void;
@@ -19,8 +54,8 @@ namespace Vidyano.WebComponents {
         draggableItems: string;
         enabled: boolean;
 
-        attached() {
-            super.attached();
+        connectedCallback() {
+            super.connectedCallback();
 
             if (this.group)
                 _groups.push(this);
@@ -28,12 +63,12 @@ namespace Vidyano.WebComponents {
             this._create();
         }
 
-        detached() {
+        disconnectedCallback() {
             if (this.group)
                 _groups.remove(this);
 
             this._destroy();
-            super.detached();
+            super.disconnectedCallback();
         }
 
         groupChanged() {
@@ -108,49 +143,6 @@ namespace Vidyano.WebComponents {
         private _enabledChanged(enabled: boolean) {
             if(this._sortable)
                 this._sortable.option("disabled", !enabled);
-        }
-
-        static register(info: IWebComponentRegistrationInfo | Function = {}): any {
-            if (typeof info === "function")
-                return Sortable.register({})(info);
-
-            return (obj: Function) => {
-                info.properties = info.properties || {};
-
-                info.properties["group"] = {
-                    type: String,
-                    reflectToAttribute: true,
-                };
-                info.properties["filter"] = {
-                    type: String,
-                    reflectToAttribute: true
-                };
-                info.properties["draggableItems"] = {
-                    type: String,
-                    reflectToAttribute: true
-                };
-                info.properties["handle"] = {
-                    type: String,
-                    reflectToAttribute: true
-                };
-                info.properties["isDragging"] = {
-                    type: Boolean,
-                    reflectToAttribute: true,
-                    readOnly: true
-                };
-                info.properties["isGroupDragging"] = {
-                    type: Boolean,
-                    reflectToAttribute: true,
-                    readOnly: true
-                };
-                info.properties["enabled"] = { // Use enabled before disabled to prevent IE from blocking all events
-                    type: Boolean,
-                    reflectToAttribute: true,
-                    observer: "_enabledChanged"
-                };
-
-                return WebComponent.register(obj, info);
-            };
         }
     }
 }

@@ -16,6 +16,10 @@
     "inputFile": "src/WebComponents/App/app.scss"
   },
   {
+    "outputFile": "src/WebComponents/App/StyleModules/responsive.css",
+    "inputFile": "src/WebComponents/App/StyleModules/responsive.scss"
+  },
+  {
     "outputFile": "src/WebComponents/Audit/audit.css",
     "inputFile": "src/WebComponents/Audit/audit.scss"
   },
@@ -390,6 +394,10 @@
   {
     "outputFile": "src/WebComponents/Website/website.css",
     "inputFile": "src/WebComponents/Website/website.scss"
+  },
+  {
+    "outputFile": "src/WebComponents/Attributes/StyleModules/persistent-object-attribute.css",
+    "inputFile": "src/WebComponents/Attributes/StyleModules/persistent-object-attribute.scss"
   },
   {
     "outputFile": "src/WebComponents/Tags/tags.css",

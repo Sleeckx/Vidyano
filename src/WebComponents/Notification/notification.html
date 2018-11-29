@@ -8,14 +8,16 @@
             <vi-icon source="[[icon]]"></vi-icon>
         </div>
         <div class="flex relative" on-tap="_moreInfo">
-            <template is="dom-if" if="[[!hidden]]">
-                <vi-size-tracker on-sizechanged="_trackerSizeChanged"></vi-size-tracker>
-            </template>
-            <span id="text" inner-h-t-m-l="[[_textInline(text)]]"></span>
+            <dom-if if="[[!hidden]]">
+                <template>
+                    <vi-size-tracker on-sizechanged="_trackerSizeChanged"></vi-size-tracker>
+                </template>
+            </dom-if>
+            <span id="text" inner-h-t-m-l="[[inlineText]]"></span>
         </div>
-        <button is="vi-button" id="close" on-tap="_close" hidden$="[[noClose]]">
+        <vi-button id="close" on-tap="_close" hidden$="[[noClose]]">
             <vi-icon source="Notification_Close"></vi-icon>
-        </button>
+        </vi-button>
     </template>
 </dom-module>
 
