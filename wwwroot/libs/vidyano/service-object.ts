@@ -28,4 +28,25 @@ export abstract class ServiceObject extends Observable<ServiceObject> {
         });
         return result;
     }
+
+    copyPropertiesFromValues(
+        values: { [key: string]: any },
+        includeNullValues?: boolean,
+        result?: any
+    ): any {
+        result = result || {};
+        Object.keys(values).forEach(key => {
+            const value = values[key];
+            if (
+                includeNullValues ||
+                (value != null &&
+                    value !== false &&
+                    (value !== 0 || key === "pageSize") &&
+                    (!Array.isArray(value) || value.length > 0))
+            ) {
+                result[key] = value;
+            }
+        });
+        return result;
+    }
 }

@@ -9,118 +9,180 @@ import type { PersistentObjectAttributeAsDetail } from "./persistent-object-attr
 import { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
 import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 
+/**
+ * Defines available layout modes when displaying persistent objects.
+ */
 export enum PersistentObjectLayoutMode {
     FullPage,
     MasterDetail
 }
 
+/**
+ * Handles the state and operations for persistent objects, including editing,
+ * saving, refreshing data, and managing attributes and tabs.
+ */
 export class PersistentObject extends ServiceObjectWithActions {
-    private _isSystem: boolean;
-    private _lastResult: any;
-    private _lastUpdated: Date;
-    private _lastResultBackup: any;
-    private securityToken: string;
-    private _isEditing: boolean = false;
-    private _isDirty: boolean = false;
-    private _id: string;
-    private _type: string;
-    private _breadcrumb: string;
-    private _isDeleted: boolean;
-    private _tabs: PersistentObjectTab[];
-    private _isFrozen: boolean = false;
-    private _tag: any;
-    readonly isBreadcrumbSensitive: boolean;
-    readonly forceFromAction: boolean;
-    fullTypeName: string;
-    label: string;
-    objectId: string;
-    isHidden: boolean;
-    isNew: boolean;
-    isReadOnly: boolean;
-    queryLayoutMode: PersistentObjectLayoutMode;
-    newOptions: string;
-    ignoreCheckRules: boolean;
-    stateBehavior: string;
-    dialogSaveAction: Action;
-    parent: PersistentObject;
-    ownerDetailAttribute: PersistentObjectAttributeAsDetail;
-    ownerAttributeWithReference: PersistentObjectAttributeWithReference;
-    ownerPersistentObject: PersistentObject;
-    ownerQuery: Query;
-    bulkObjectIds: string[];
-    queriesToRefresh: Array<string> = [];
-    attributes: PersistentObjectAttribute[];
-    queries: Query[];
+    #isSystem;
+    #lastResult;
+    #lastUpdated;
+    #lastResultBackup;
+    #securityToken;
+    #isEditing = false;
+    #isDirty = false;
+    #id;
+    #type;
+    #breadcrumb;
+    #isDeleted;
+    #tabs;
+    #isFrozen = false;
+    #tag;
+    readonly isBreadcrumbSensitive;
+    readonly forceFromAction;
+    fullTypeName;
+    label;
+    objectId;
+    isHidden;
+    isNew;
+    isReadOnly;
+    queryLayoutMode;
+    newOptions;
+    ignoreCheckRules;
+    stateBehavior;
+    dialogSaveAction;
+    parent;
+    ownerDetailAttribute;
+    ownerAttributeWithReference;
+    ownerPersistentObject;
+    ownerQuery;
+    bulkObjectIds;
+    queriesToRefresh = [];
+    attributes;
+    queries;
 
+    /**
+     * Instantiates a persistent object using a service instance and initial data.
+     * @param service The service context providing hooks and actions.
+     * @param po The data representing the persistent object.
+     */
     constructor(service: Service, po: Dto.PersistentObject);
     constructor(service: Service, po: any) {
-        super(service, (po._actionNames || po.actions || []).map(a => a === "Edit" && po.isNew ? "Save" : a), po.actionLabels);
+        super(
+            service,
+            (po._actionNames || po.actions || []).map(a => a === "Edit" && po.isNew ? "Save" : a),
+            po.actionLabels
+        );
 
-        this._id = po.id;
-        this._isSystem = !!po.isSystem;
-        this._type = po.type;
+        this.#id = po.id;
+        this.#isSystem = !!po.isSystem;
+        this.#type = po.type;
         this.label = po.label;
         this.forceFromAction = po.forceFromAction;
         this.fullTypeName = po.fullTypeName;
         this.queryLayoutMode = po.queryLayoutMode === "FullPage" ? PersistentObjectLayoutMode.FullPage : PersistentObjectLayoutMode.MasterDetail;
         this.objectId = po.objectId;
-        this._breadcrumb = po.breadcrumb;
+        this.#breadcrumb = po.breadcrumb;
         this.isBreadcrumbSensitive = po.isBreadcrumbSensitive;
         this.setNotification(po.notification, po.notificationType, po.notificationDuration, true);
         this.isNew = !!po.isNew;
         this.newOptions = po.newOptions;
         this.isReadOnly = !!po.isReadOnly;
         this.isHidden = !!po.isHidden;
-        this._isDeleted = !!po.isDeleted;
+        this.#isDeleted = !!po.isDeleted;
         this.ignoreCheckRules = !!po.ignoreCheckRules;
         this.stateBehavior = po.stateBehavior || "None";
-        this.setIsEditing(false);
-        this.securityToken = po.securityToken;
+        this.#setIsEditing(false);
+        this.#securityToken = po.securityToken;
         this.bulkObjectIds = po.bulkObjectIds;
         this.queriesToRefresh = po.queriesToRefresh || [];
         this.parent = po.parent != null ? service.hooks.onConstructPersistentObject(service, po.parent) : null;
 
-        this.attributes = po.attributes ? (<PersistentObjectAttribute[]>po.attributes).map(attr => this._createPersistentObjectAttribute(attr)) : [];
+        this.attributes = po.attributes
+            ? (<PersistentObjectAttribute[]>po.attributes).map(attr => this.#createPersistentObjectAttribute(attr))
+            : [];
         this.attributes.forEach(attr => this.attributes[attr.name] = attr);
 
-        this.queries = po.queries ? (<Query[]>po.queries).map(query => service.hooks.onConstructQuery(service, query, this)).orderBy(q => q.offset) : [];
+        this.queries = po.queries
+            ? (<Query[]>po.queries).map(query => service.hooks.onConstructQuery(service, query, this)).orderBy(q => q.offset)
+            : [];
         this.queries.forEach(query => this.queries[query.name] = query);
 
-        const attributeTabs = po.tabs ? this.attributes.orderBy(attr => attr.offset).groupBy(attr => attr.tabKey).map(attributesByTab => {
-            const groups = attributesByTab.value.orderBy(attr => attr.offset).groupBy(attr => attr.groupKey).map(attributesByGroup => {
-                const newGroup = this.service.hooks.onConstructPersistentObjectAttributeGroup(service, attributesByGroup.key, attributesByGroup.value, this);
-                attributesByGroup.value.forEach(attr => attr.group = newGroup);
+        const attributeTabs = po.tabs
+            ? this.attributes
+                  .orderBy(attr => attr.offset)
+                  .groupBy(attr => attr.tabKey)
+                  .map(attributesByTab => {
+                      const groups = attributesByTab.value
+                          .orderBy(attr => attr.offset)
+                          .groupBy(attr => attr.groupKey)
+                          .map(attributesByGroup => {
+                              const newGroup = this.service.hooks.onConstructPersistentObjectAttributeGroup(
+                                  service,
+                                  attributesByGroup.key,
+                                  attributesByGroup.value,
+                                  this
+                              );
+                              attributesByGroup.value.forEach(attr => (attr.group = newGroup));
 
-                return newGroup;
-            });
-            groups.forEach((g, n) => g.index = n);
+                              return newGroup;
+                          });
+                      groups.forEach((g, n) => (g.index = n));
 
-            const serviceTab = po.tabs[attributesByTab.key] || {};
-            const newTab = this.service.hooks.onConstructPersistentObjectAttributeTab(service, groups, attributesByTab.key, serviceTab.id, serviceTab.name, serviceTab.layout, this, serviceTab.columnCount, !this.isHidden);
-            attributesByTab.value.forEach(attr => attr.tab = newTab);
+                      const serviceTab = po.tabs[attributesByTab.key] || {};
+                      const newTab = this.service.hooks.onConstructPersistentObjectAttributeTab(
+                          service,
+                          groups,
+                          attributesByTab.key,
+                          serviceTab.id,
+                          serviceTab.name,
+                          serviceTab.layout,
+                          this,
+                          serviceTab.columnCount,
+                          !this.isHidden
+                      );
+                      attributesByTab.value.forEach(attr => (attr.tab = newTab));
 
-            return newTab;
-        }) : [];
+                      return newTab;
+                  })
+            : [];
 
-        this._tabs = this.service.hooks.onSortPersistentObjectTabs(this, <PersistentObjectAttributeTab[]>attributeTabs, this.queries.map(q => this.service.hooks.onConstructPersistentObjectQueryTab(this.service, q)));
+        this.#tabs = this.service.hooks.onSortPersistentObjectTabs(
+            this,
+            <PersistentObjectAttributeTab[]>attributeTabs,
+            this.queries.map(q => this.service.hooks.onConstructPersistentObjectQueryTab(this.service, q))
+        );
 
-        if (this._tabs.length === 0)
-            this._tabs = [this.service.hooks.onConstructPersistentObjectAttributeTab(service, [], "", "", "", null, this, 0, true)];
+        if (this.#tabs.length === 0)
+            this.#tabs = [
+                this.service.hooks.onConstructPersistentObjectAttributeTab(service, [], "", "", "", null, this, 0, true)
+            ];
 
-        this._tag = po.tag;
-        this._lastResult = po;
+        this.#tag = po.tag;
+        this.#lastResult = po;
 
-        if (this.isNew || this.stateBehavior === "OpenInEdit" || this.stateBehavior.indexOf("OpenInEdit") >= 0 || this.stateBehavior === "StayInEdit" || this.stateBehavior.indexOf("StayInEdit") >= 0)
+        if (
+            this.isNew ||
+            this.stateBehavior === "OpenInEdit" ||
+            this.stateBehavior.indexOf("OpenInEdit") >= 0 ||
+            this.stateBehavior === "StayInEdit" ||
+            this.stateBehavior.indexOf("StayInEdit") >= 0
+        )
             this.beginEdit();
 
         this._initializeActions();
-        this.dialogSaveAction = po.dialogSaveAction ? this.getAction(po.dialogSaveAction) : (this.getAction("EndEdit") || this.getAction("Save"));
+        this.dialogSaveAction = po.dialogSaveAction
+            ? this.getAction(po.dialogSaveAction)
+            : this.getAction("EndEdit") || this.getAction("Save");
 
         this.service.hooks.onRefreshFromResult(this);
-        this._setLastUpdated(new Date());
+        this.#setLastUpdated(new Date());
     }
 
-    private _createPersistentObjectAttribute(attr: PersistentObjectAttribute): PersistentObjectAttribute {
+    /**
+     * Creates an attribute instance based on its properties, choosing between
+     * standard, reference, or detail attribute types.
+     * @param attr The raw attribute data.
+     */
+    #createPersistentObjectAttribute(attr: PersistentObjectAttribute): PersistentObjectAttribute {
         if ((<PersistentObjectAttributeWithReference>attr).displayAttribute || (<PersistentObjectAttributeWithReference>attr).objectId)
             return this.service.hooks.onConstructPersistentObjectAttributeWithReference(this.service, attr, this);
 
@@ -130,65 +192,106 @@ export class PersistentObject extends ServiceObjectWithActions {
         return this.service.hooks.onConstructPersistentObjectAttribute(this.service, attr, this);
     }
 
+    /**
+     * Unique identifier of the persistent object.
+     */
     get id(): string {
-        return this._id;
+        return this.#id;
     }
 
+    /**
+     * Indicates if the object is defined by the system.
+     */
     get isSystem(): boolean {
-        return this._isSystem;
+        return this.#isSystem;
     }
 
+    /**
+     * Provides type information for the persistent object.
+     */
     get type(): string {
-        return this._type;
+        return this.#type;
     }
 
+    /**
+     * Determines if the object represents a bulk edit scenario.
+     */
     get isBulkEdit(): boolean {
         return this.bulkObjectIds && this.bulkObjectIds.length > 0;
     }
 
+    /**
+     * Lists the tabs associated with the persistent object.
+     */
     get tabs(): PersistentObjectTab[] {
-        return this._tabs;
+        return this.#tabs;
     }
 
     set tabs(tabs: PersistentObjectTab[]) {
-        const oldTabs = this._tabs;
-        this.notifyPropertyChanged("tabs", this._tabs = tabs, oldTabs);
+        const oldTabs = this.#tabs;
+        this.notifyPropertyChanged("tabs", (this.#tabs = tabs), oldTabs);
     }
 
+    /**
+     * Retrieves additional tag data attached to the object.
+     */
     get tag() {
-        return this._tag;
+        return this.#tag;
     }
 
+    /**
+     * Flag indicating if the object is currently in edit mode.
+     */
     get isEditing(): boolean {
-        return this._isEditing;
+        return this.#isEditing;
     }
 
-    private setIsEditing(value: boolean) {
-        this._isEditing = value;
+    /**
+     * Sets edit mode and notifies related actions.
+     * @param value Whether editing mode is enabled.
+     */
+    #setIsEditing(value: boolean) {
+        this.#isEditing = value;
         this.actions.forEach(action => action._onParentIsEditingChanged(value));
         this.notifyPropertyChanged("isEditing", value, !value);
     }
 
+    /**
+     * Navigation breadcrumb representing the object's location.
+     */
     get breadcrumb(): string {
-        return this._breadcrumb;
+        return this.#breadcrumb;
     }
-    private _setBreadcrumb(breadcrumb: string) {
-        const oldBreadcrumb = this._breadcrumb;
+
+    /**
+     * Updates the breadcrumb value and notifies listeners when it changes.
+     * @param breadcrumb The new breadcrumb.
+     */
+    #setBreadcrumb(breadcrumb: string) {
+        const oldBreadcrumb = this.#breadcrumb;
         if (oldBreadcrumb !== breadcrumb)
-            this.notifyPropertyChanged("breadcrumb", this._breadcrumb = breadcrumb, oldBreadcrumb);
+            this.notifyPropertyChanged("breadcrumb", (this.#breadcrumb = breadcrumb), oldBreadcrumb);
     }
 
+    /**
+     * Indicates if there are unsaved modifications.
+     */
     get isDirty(): boolean {
-        return this._isDirty;
+        return this.#isDirty;
     }
 
-    private _setIsDirty(value: boolean, force?: boolean) {
+    /**
+     * Marks the object as having unsaved changes and alerts dependent actions.
+     * @param value The new dirty state.
+     * @param force Allows flagging as dirty even if not in edit mode.
+     */
+    #setIsDirty(value: boolean, force?: boolean) {
         if (value && (!this.isEditing && !force))
             throw "Cannot flag persistent object as dirty when not in edit mode.";
 
-        const oldIsDirty = this._isDirty;
+        const oldIsDirty = this.#isDirty;
         if (oldIsDirty !== value) {
-            this.notifyPropertyChanged("isDirty", this._isDirty = value, oldIsDirty);
+            this.notifyPropertyChanged("isDirty", (this.#isDirty = value), oldIsDirty);
             this.actions.forEach(action => action._onParentIsDirtyChanged(value));
 
             if (this.ownerDetailAttribute && value)
@@ -196,43 +299,69 @@ export class PersistentObject extends ServiceObjectWithActions {
         }
     }
 
+    /**
+     * Indicates whether the object is marked as deleted.
+     */
     get isDeleted(): boolean {
-        return this._isDeleted;
+        return this.#isDeleted;
     }
 
     set isDeleted(isDeleted: boolean) {
-        const oldIsDeleted = this._isDeleted;
+        const oldIsDeleted = this.#isDeleted;
         if (oldIsDeleted !== isDeleted)
-            this.notifyPropertyChanged("isDeleted", this._isDeleted = isDeleted, oldIsDeleted);
+            this.notifyPropertyChanged("isDeleted", (this.#isDeleted = isDeleted), oldIsDeleted);
     }
 
+    /**
+     * Shows if the object is in a frozen state.
+     */
     get isFrozen(): boolean {
-        return this._isFrozen;
+        return this.#isFrozen;
     }
 
+    /**
+     * Freezes the object to prevent modifications.
+     */
     freeze() {
-        if (this._isFrozen)
+        if (this.#isFrozen)
             return;
 
-        this.notifyPropertyChanged("isFrozen", this._isFrozen = true, false);
+        this.notifyPropertyChanged("isFrozen", (this.#isFrozen = true), false);
     }
 
+    /**
+     * Unfreezes the object to allow modifications.
+     */
     unfreeze() {
-        if (!this._isFrozen)
+        if (!this.#isFrozen)
             return;
 
-        this.notifyPropertyChanged("isFrozen", this._isFrozen = false, true);
+        this.notifyPropertyChanged("isFrozen", (this.#isFrozen = false), true);
     }
 
+    /**
+     * Retrieves an attribute by name.
+     * @param name The attribute's name.
+     */
     getAttribute(name: string): PersistentObjectAttribute {
         return this.attributes[name];
     }
 
+    /**
+     * Gets the current value of a specified attribute.
+     * @param name The attribute's name.
+     */
     getAttributeValue(name: string): any {
         const attr = this.attributes[name];
         return attr != null ? attr.value : null;
     }
 
+    /**
+     * Sets a new value for an attribute and optionally triggers a refresh.
+     * @param name The attribute's name.
+     * @param value The new value.
+     * @param allowRefresh If true, a refresh may follow the update.
+     */
     setAttributeValue(name: string, value: any, allowRefresh?: boolean): Promise<any> {
         const attr = <PersistentObjectAttribute>this.attributes[name];
         if (!attr)
@@ -241,34 +370,50 @@ export class PersistentObject extends ServiceObjectWithActions {
         return attr.setValue(value, allowRefresh);
     }
 
+    /**
+     * Timestamp marking the last update.
+     */
     get lastUpdated(): Date {
-        return this._lastUpdated;
+        return this.#lastUpdated;
     }
 
-    private _setLastUpdated(lastUpdated: Date) {
-        const oldLastUpdated = this._lastUpdated;
-        this.notifyPropertyChanged("lastUpdated", this._lastUpdated = lastUpdated, oldLastUpdated);
+    /**
+     * Sets the last update time and alerts listeners.
+     * @param lastUpdated The new timestamp.
+     */
+    #setLastUpdated(lastUpdated: Date) {
+        const oldLastUpdated = this.#lastUpdated;
+        this.notifyPropertyChanged("lastUpdated", (this.#lastUpdated = lastUpdated), oldLastUpdated);
     }
 
+    /**
+     * Retrieves a query by name linked to this object.
+     * @param name The query's name.
+     */
     getQuery(name: string): Query {
         return this.queries[name];
     }
 
+    /**
+     * Enters edit mode and saves the current state for potential rollback.
+     */
     beginEdit() {
         if (!this.isEditing) {
-            this._lastResultBackup = this._lastResult;
-
-            this.setIsEditing(true);
+            this.#lastResultBackup = this.#lastResult;
+            this.#setIsEditing(true);
         }
     }
 
+    /**
+     * Cancels edit mode, reverts changes from backup, and resets notifications.
+     */
     cancelEdit() {
         if (this.isEditing) {
-            this.setIsEditing(false);
-            this._setIsDirty(false);
+            this.#setIsEditing(false);
+            this.#setIsDirty(false);
 
-            const backup = this._lastResultBackup;
-            this._lastResultBackup = null;
+            const backup = this.#lastResultBackup;
+            this.#lastResultBackup = null;
             this.refreshFromResult(backup, true);
 
             if (!!this.notification)
@@ -279,6 +424,10 @@ export class PersistentObject extends ServiceObjectWithActions {
         }
     }
 
+    /**
+     * Saves changes, refreshes state, and handles post-save notifications.
+     * @param waitForOwnerQuery Optionally waits for the owner query to refresh.
+     */
     save(waitForOwnerQuery?: boolean): Promise<boolean> {
         return this.queueWork(async () => {
             if (this.isEditing) {
@@ -294,10 +443,10 @@ export class PersistentObject extends ServiceObjectWithActions {
                 this.refreshFromResult(po, true);
 
                 if (!this.notification || this.notification.trim().length === 0 || this.notificationType !== "Error") {
-                    this._setIsDirty(false);
+                    this.#setIsDirty(false);
 
                     if (!wasNew) {
-                        this.setIsEditing(false);
+                        this.#setIsEditing(false);
                         if (this.stateBehavior === "StayInEdit" || this.stateBehavior.indexOf("StayInEdit") >= 0)
                             this.beginEdit();
                     }
@@ -310,14 +459,11 @@ export class PersistentObject extends ServiceObjectWithActions {
 
                             parent.beginEdit();
                             this.ownerAttributeWithReference.changeReference([po.objectId]);
-                        }
-                        else if (this.ownerAttributeWithReference.value !== this.breadcrumb)
+                        } else if (this.ownerAttributeWithReference.value !== this.breadcrumb)
                             this.ownerAttributeWithReference.value = this.breadcrumb;
-                    }
-                    else if (this.ownerQuery)
+                    } else if (this.ownerQuery)
                         this.ownerQuery.search({ keepSelection: this.isBulkEdit });
-                }
-                else if (!!this.notification && this.notification.trim().length > 0)
+                } else if (!!this.notification && this.notification.trim().length > 0)
                     throw this.notification;
             }
 
@@ -325,8 +471,21 @@ export class PersistentObject extends ServiceObjectWithActions {
         });
     }
 
+    /**
+     * Serializes the object into a service-friendly format.
+     * @param skipParent If true, parent data is excluded.
+     */
     toServiceObject(skipParent: boolean = false): any {
-        const result = this.copyProperties(["id", "type", "objectId", "isNew", "isHidden", "bulkObjectIds", "securityToken", "isSystem"]);
+        const result = this.copyPropertiesFromValues({
+            "id": this.#id,
+            "type": this.#type,
+            "objectId": this.objectId,
+            "isNew": this.isNew,
+            "isHidden": this.isHidden,
+            "bulkObjectIds": this.bulkObjectIds,
+            "securityToken": this.#getSecurityToken(),
+            "isSystem": this.#isSystem
+        });
 
         if (this.ownerQuery)
             result.ownerQueryId = this.ownerQuery.id;
@@ -335,15 +494,20 @@ export class PersistentObject extends ServiceObjectWithActions {
             result.parent = this.parent.toServiceObject();
         if (this.attributes)
             result.attributes = this.attributes.map(attr => attr._toServiceObject());
-        if (this._lastResult.metadata != null)
-            result.metadata = this._lastResult.metadata;
+        if (this.#lastResult.metadata != null)
+            result.metadata = this.#lastResult.metadata;
 
         return result;
     }
 
+    /**
+     * Refreshes the object state from a new service result, merging changes.
+     * @param result The new data from the service.
+     * @param resultWins If true, the new data overrides current values.
+     */
     refreshFromResult(result: PersistentObject, resultWins: boolean = false) {
         if (result instanceof PersistentObject)
-            result = result._lastResult;
+            result = result.#lastResult;
 
         const changedAttributes: PersistentObjectAttribute[] = [];
         let isDirty = false;
@@ -351,7 +515,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         if (!this.isEditing && result.attributes.some(a => a.isValueChanged))
             this.beginEdit();
 
-        this._lastResult = result;
+        this.#lastResult = result;
 
         this.attributes.removeAll(attr => {
             if (!result.attributes.some(serviceAttr => serviceAttr.id === attr.id)) {
@@ -369,7 +533,7 @@ export class PersistentObject extends ServiceObjectWithActions {
             let serviceAttr = result.attributes.find(serviceAttr => serviceAttr.id === attr.id);
             if (serviceAttr) {
                 if (!(serviceAttr instanceof PersistentObjectAttribute))
-                    serviceAttr = this._createPersistentObjectAttribute(serviceAttr);
+                    serviceAttr = this.#createPersistentObjectAttribute(serviceAttr);
 
                 if (attr._refreshFromResult(serviceAttr, resultWins))
                     changedAttributes.push(attr);
@@ -381,7 +545,7 @@ export class PersistentObject extends ServiceObjectWithActions {
 
         result.attributes.forEach(serviceAttr => {
             if (!this.attributes.some(a => a.id === serviceAttr.id)) {
-                const attr = this._createPersistentObjectAttribute(serviceAttr);
+                const attr = this.#createPersistentObjectAttribute(serviceAttr);
                 this.attributes.push(attr);
                 attr.parent = this;
 
@@ -396,15 +560,15 @@ export class PersistentObject extends ServiceObjectWithActions {
             this.refreshTabsAndGroups(...changedAttributes);
 
         this.setNotification(result.notification, result.notificationType, result.notificationDuration);
-        this._setIsDirty(isDirty, true);
+        this.#setIsDirty(isDirty, true);
 
         this.objectId = result.objectId;
         if (this.isNew)
             this.isNew = result.isNew;
 
-        this.securityToken = result.securityToken;
+        this.#securityToken = result instanceof PersistentObject ? result.#getSecurityToken() : (result as Dto.PersistentObject).securityToken;
         if (result.breadcrumb)
-            this._setBreadcrumb(result.breadcrumb);
+            this.#setBreadcrumb(result.breadcrumb);
 
         if (result.queriesToRefresh) {
             result.queriesToRefresh.forEach(async id => {
@@ -414,28 +578,49 @@ export class PersistentObject extends ServiceObjectWithActions {
             });
         }
 
-        this._tag = result.tag;
+        this.#tag = result.tag;
 
         this.service.hooks.onRefreshFromResult(this);
-        this._setLastUpdated(new Date());
+        this.#setLastUpdated(new Date());
     }
 
+    #getSecurityToken(): string {
+        return this.#securityToken;
+    }
+
+    /**
+     * Rebuilds the tabs and groups based on changed attributes.
+     * @param changedAttributes The attributes that have been modified.
+     */
     refreshTabsAndGroups(...changedAttributes: PersistentObjectAttribute[]) {
         const tabGroupsChanged = new Set<PersistentObjectAttributeTab>();
         const tabGroupAttributesChanged = new Set<PersistentObjectAttributeGroup>();
         let tabsRemoved = false;
         let tabsAdded = false;
         changedAttributes.forEach(attr => {
-            let tab = <PersistentObjectAttributeTab>this.tabs.find(t => t instanceof PersistentObjectAttributeTab && t.key === attr.tabKey);
+            let tab = <PersistentObjectAttributeTab>this.tabs.find(
+                t => t instanceof PersistentObjectAttributeTab && t.key === attr.tabKey
+            );
             if (!tab) {
-                if (!attr.isVisible)
-                    return;
+                if (!attr.isVisible) return;
 
-                const groups = [this.service.hooks.onConstructPersistentObjectAttributeGroup(this.service, attr.groupKey, [attr], this)];
+                const groups = [
+                    this.service.hooks.onConstructPersistentObjectAttributeGroup(this.service, attr.groupKey, [attr], this)
+                ];
                 groups[0].index = 0;
 
-                const serviceTab = this._lastResult.tabs[attr.tabKey];
-                attr.tab = tab = this.service.hooks.onConstructPersistentObjectAttributeTab(this.service, groups, attr.tabKey, serviceTab.id, serviceTab.name, serviceTab.layout, this, serviceTab.columnCount, !this.isHidden);
+                const serviceTab = this.#lastResult.tabs[attr.tabKey];
+                attr.tab = tab = this.service.hooks.onConstructPersistentObjectAttributeTab(
+                    this.service,
+                    groups,
+                    attr.tabKey,
+                    serviceTab.id,
+                    serviceTab.name,
+                    serviceTab.layout,
+                    this,
+                    serviceTab.columnCount,
+                    !this.isHidden
+                );
                 this.tabs.push(tab);
                 tabsAdded = true;
                 return;
@@ -446,11 +631,10 @@ export class PersistentObject extends ServiceObjectWithActions {
                 group = this.service.hooks.onConstructPersistentObjectAttributeGroup(this.service, attr.groupKey, [attr], this);
                 tab.groups.push(group);
                 tab.groups.sort((g1, g2) => g1.attributes.min(a => a.offset) - g2.attributes.min(a => a.offset));
-                tab.groups.forEach((g, n) => g.index = n);
+                tab.groups.forEach((g, n) => (g.index = n));
 
                 tabGroupsChanged.add(tab);
-            }
-            else if (attr.isVisible && attr.parent) {
+            } else if (attr.isVisible && attr.parent) {
                 if (group.attributes.indexOf(attr) < 0) {
                     group.attributes.push(attr);
                     tabGroupAttributesChanged.add(group);
@@ -460,8 +644,7 @@ export class PersistentObject extends ServiceObjectWithActions {
                     tab.attributes[attr.name] = group.attributes[attr.name] = attr;
                     group.attributes.sort((x, y) => x.offset - y.offset);
                 }
-            }
-            else if (group) {
+            } else if (group) {
                 group.attributes.remove(attr);
                 delete group.attributes[attr.name];
 
@@ -476,30 +659,30 @@ export class PersistentObject extends ServiceObjectWithActions {
                         this.tabs.remove(tab);
                         tabsRemoved = true;
                         return;
-                    }
-                    else
-                        tab.groups.forEach((g, n) => g.index = n);
-                }
-                else
-                    tabGroupAttributesChanged.add(group);
+                    } else tab.groups.forEach((g, n) => (g.index = n));
+                } else tabGroupAttributesChanged.add(group);
             }
         });
 
-        const attributeTabs = <PersistentObjectAttributeTab[]>this.tabs.filter(t => t instanceof PersistentObjectAttributeTab);
+        const attributeTabs = <PersistentObjectAttributeTab[]>this.tabs.filter(
+            t => t instanceof PersistentObjectAttributeTab
+        );
 
         if (tabsAdded) {
-            attributeTabs.sort((t1, t2) => [].concat(...t1.groups.map(g => g.attributes)).min(a => a.offset) - [].concat(...t2.groups.map(g => g.attributes)).min(a => a.offset));
+            attributeTabs.sort(
+                (t1, t2) =>
+                    [].concat(...t1.groups.map(g => g.attributes)).min(a => a.offset) -
+                    [].concat(...t2.groups.map(g => g.attributes)).min(a => a.offset)
+            );
 
             const queryTabs = <PersistentObjectQueryTab[]>this.tabs.filter(t => t instanceof PersistentObjectQueryTab);
             queryTabs.sort((q1, q2) => q1.query.offset - q2.query.offset);
 
             this.tabs = this.service.hooks.onSortPersistentObjectTabs(this, attributeTabs, queryTabs);
-        }
-        else if (tabsRemoved)
-            this.tabs = this.tabs.slice();
+        } else if (tabsRemoved) this.tabs = this.tabs.slice();
 
         if (tabGroupsChanged.size > 0)
-            tabGroupsChanged.forEach(tab => tab.groups = tab.groups.slice());
+            tabGroupsChanged.forEach(tab => (tab.groups = tab.groups.slice()));
 
         if (tabGroupAttributesChanged.size > 0) {
             tabGroupAttributesChanged.forEach(group => {
@@ -508,37 +691,49 @@ export class PersistentObject extends ServiceObjectWithActions {
         }
 
         // Flag tabs as visible if they have any visible attributes
-        attributeTabs.forEach(tab => tab.isVisible = tab.attributes.some(a => a.isVisible));
+        attributeTabs.forEach(tab => (tab.isVisible = tab.attributes.some(a => a.isVisible)));
     }
 
+    /**
+     * Flags the object as dirty when in edit mode.
+     */
     triggerDirty(): boolean {
-        if (this.isEditing)
-            this._setIsDirty(true);
-
+        if (this.isEditing) this.#setIsDirty(true);
         return this.isDirty;
     }
 
-    _triggerAttributeRefresh(attr: PersistentObjectAttribute, immediate?: boolean): Promise<boolean> {
+    /**
+     * Refreshes a given attribute by re-querying the service.
+     * @param attr The attribute to refresh.
+     * @param immediate If true, performs the refresh immediately.
+     */
+    #triggerAttributeRefresh(attr: PersistentObjectAttribute, immediate?: boolean): Promise<boolean> {
         const attrValue = attr.value;
         const work = async () => {
-            if (attrValue !== attr.value)
-                return false;
+            if (attrValue !== attr.value) return false;
 
-            this._prepareAttributesForRefresh(attr);
-            const result = await this.service.executeAction("PersistentObject.Refresh", this, null, null, { RefreshedPersistentObjectAttributeId: attr.id });
-            if (this.isEditing)
-                this.refreshFromResult(result);
+            this.#prepareAttributesForRefresh(attr);
+            const result = await this.service.executeAction(
+                "PersistentObject.Refresh",
+                this,
+                null,
+                null,
+                { RefreshedPersistentObjectAttributeId: attr.id }
+            );
+            if (this.isEditing) this.refreshFromResult(result);
 
             return true;
         };
 
         let result: Promise<boolean>;
-        if (!immediate)
-            result = this.queueWork(work, false);
-        else
-            result = work();
+        if (!immediate) result = this.queueWork(work, false);
+        else result = work();
 
-        if (result && Boolean.parse(attr.getTypeHint("TriggerRefreshOnOwner", "false")?.toLowerCase()) && this.ownerDetailAttribute?.triggersRefresh) {
+        if (
+            result &&
+            Boolean.parse(attr.getTypeHint("TriggerRefreshOnOwner", "false")?.toLowerCase()) &&
+            this.ownerDetailAttribute?.triggersRefresh
+        ) {
             return result.then(async res => {
                 await this.ownerDetailAttribute._triggerAttributeRefresh(immediate);
                 return res;
@@ -548,13 +743,19 @@ export class PersistentObject extends ServiceObjectWithActions {
         return result;
     }
 
-    _prepareAttributesForRefresh(sender: PersistentObjectAttribute) {
-        this.attributes.filter(a => a.id !== sender.id).forEach(attr => {
-            (<any>attr)._refreshServiceValue = (<any>attr)._serviceValue;
-            if (attr instanceof PersistentObjectAttributeWithReference) {
-                const attrWithRef = <any>attr;
-                attrWithRef._refreshObjectId = attrWithRef.objectId;
-            }
-        });
+    /**
+     * Prepares all attributes for a refresh by caching current service values.
+     * @param sender The attribute initiating the refresh.
+     */
+    #prepareAttributesForRefresh(sender: PersistentObjectAttribute) {
+        this.attributes
+            .filter(a => a.id !== sender.id)
+            .forEach(attr => {
+                (<any>attr)._refreshServiceValue = (<any>attr)._serviceValue;
+                if (attr instanceof PersistentObjectAttributeWithReference) {
+                    const attrWithRef = <any>attr;
+                    attrWithRef._refreshObjectId = attrWithRef.objectId;
+                }
+            });
     }
 }

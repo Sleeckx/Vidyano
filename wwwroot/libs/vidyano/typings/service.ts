@@ -118,6 +118,7 @@ export declare type PersistentObject = {
     objectId?: string;
     queries?: Query[];
     queryLayoutMode?: string;
+    queriesToRefresh?: string[];
     securityToken?: never;
     stateBehavior?: PersistentObjectStateBehavior;
     tabs?: Record<string, PersistentObjectTab>;
