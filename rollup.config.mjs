@@ -32,7 +32,11 @@ export default [
 			  usePolling: true,
 			  interval: 5000
 			}
-		}
+		},
+		onwarn(warning, warn) {
+			if (warning.code === 'THIS_IS_UNDEFINED') return;
+			warn(warning);
+		},
 	},
 	{
 		input: 'rollup/vidyano.ts',

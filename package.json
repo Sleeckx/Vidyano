@@ -38,7 +38,8 @@
     "rollup-plugin-execute": "1.1.1",
     "rollup-plugin-watch": "1.0.3",
     "sortablejs": "1.15.0",
-    "tslib": "^2.6.2"
+    "tslib": "^2.6.2",
+    "typedoc": "^0.27.8"
   },
   "scripts": {
     "build": "rollup -c --bundleConfigAsCjs",
