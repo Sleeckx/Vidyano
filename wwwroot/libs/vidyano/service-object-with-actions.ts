@@ -12,8 +12,8 @@ export class ServiceObjectWithActions extends ServiceObject {
     #notification: string;
     #notificationType: NotificationType;
     #notificationDuration: number;
-    #actionNames: string[];
-    #actionLabels?: { [key: string]: string };
+    readonly #actionNames: string[];
+    readonly #actionLabels?: { [key: string]: string };
 
     /**
      * An array of actions associated with the service object.

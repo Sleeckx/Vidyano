@@ -11,6 +11,7 @@ import { PersistentObject } from "./persistent-object.js"
 import { Action } from "./action.js"
 import { ExpressionParser } from "./common/expression-parser.js"
 import { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
+import { QuerySymbols } from "./advanced.js"
 
 export interface ISortOption {
     column: QueryColumn;
@@ -145,6 +146,7 @@ export class Query extends ServiceObjectWithActions {
         super(service, queryDto.actions, queryDto.actionLabels);
 
         this.#dto = queryDto;
+        this[QuerySymbols.IsQuery] = true;
 
         this._asLookup = asLookup;
         this._isSystem = !!queryDto.isSystem;

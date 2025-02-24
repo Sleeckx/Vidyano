@@ -67,6 +67,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         super(service, po.actions, po.actionLabels);
 
         this[PersistentObjectSymbols.Dto] = po;
+        this[PersistentObjectSymbols.IsPersistentObject] = true;
         this[PersistentObjectSymbols.PrepareAttributesForRefresh] = this.#prepareAttributesForRefresh.bind(this);
         this[PersistentObjectSymbols.RefreshFromResult] = this.#refreshFromResult.bind(this);
 

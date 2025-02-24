@@ -2,13 +2,14 @@ import type * as Dto from "./typings/service.js"
 import type { KeyValuePair } from "./typings/common.js"
 import type { PersistentObject } from "./persistent-object.js"
 import type { PersistentObjectAttributeTab } from "./persistent-object-tab.js"
-import { Service } from "./service.js"
+import type { Service } from "./service.js"
 import { ServiceObject } from "./service-object.js"
 import { CultureInfo } from "./cultures.js"
 import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 import type { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
 import { Action } from "./action.js"
 import { PersistentObjectAttributeSymbols } from "./advanced.js"
+import { DataType } from "./service-data-type.js"
 
 export type PersistentObjectAttributeOption = KeyValuePair<string, string>;
 export class PersistentObjectAttribute extends ServiceObject {
@@ -269,7 +270,7 @@ export class PersistentObjectAttribute extends ServiceObject {
             this._lastParsedValue = this._serviceValue;
 
             if (!this.parent.isBulkEdit || !!this._serviceValue)
-                this._cachedValue = Service.fromServiceString(this._serviceValue, this.type);
+                this._cachedValue = DataType.fromServiceString(this._serviceValue, this.type);
             else
                 this._cachedValue = null;
         }
@@ -297,7 +298,7 @@ export class PersistentObjectAttribute extends ServiceObject {
             }
         }
 
-        const newServiceValue = Service.toServiceString(val, this.type);
+        const newServiceValue = DataType.toServiceString(val, this.type);
 
         // If value is equal
         if (this._cachedValue === val || (this._serviceValue == null && String.isNullOrEmpty(newServiceValue)) || this._serviceValue === newServiceValue) {

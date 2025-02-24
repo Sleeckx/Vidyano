@@ -4,9 +4,9 @@ import type { QueryResultItem } from "./query-result-item.js"
 import type { NotificationType, Service } from "./service.js"
 import { ServiceObject } from "./service-object.js"
 import type { ServiceObjectWithActions } from "./service-object-with-actions.js"
-import { PersistentObject } from "./persistent-object.js"
-import type { Query } from "./query.js"
-import { PersistentObjectSymbols } from "./advanced.js"
+import type { PersistentObject } from "./persistent-object.js"
+import { Query } from "./query.js"
+import { PersistentObjectSymbols, QuerySymbols } from "./advanced.js"
 
 export interface IActionExecuteOptions {
     menuOption?: number;
@@ -52,7 +52,7 @@ export class Action extends ServiceObject {
         this._isPinned = definition.isPinned;
         this._offset = definition.offset;
 
-        if (owner["persistentObject"]) { //} instanceof Query) { // TODO: Other way to check?
+        if (owner[QuerySymbols.IsQuery]) {
             this._targetType = "Query";
             this._query = <Query>owner;
             this._parent = this.query.parent;
@@ -83,7 +83,7 @@ export class Action extends ServiceObject {
 
             this.canExecute = this.selectionRule(0);
         }
-        else if (owner instanceof PersistentObject) {
+        else if (owner[PersistentObjectSymbols.IsPersistentObject]) {
             this._targetType = "PersistentObject";
             this._parent = <PersistentObject>owner;
             this.canExecute = true;
