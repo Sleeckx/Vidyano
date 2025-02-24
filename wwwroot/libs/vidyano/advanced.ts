@@ -12,6 +12,7 @@ export const PersistentObjectSymbols = {
 };
 
 export const PersistentObjectAttributeSymbols = {
+    BackupServiceValue: Symbol("PersistentObjectAttribute_BackupServiceValue"),
     IsPersistentObjectAttribute: Symbol("PersistentObjectAttribute_IsPersistentObjectAttribute"),
     RefreshFromResult: Symbol("PersistentObjectAttribute_RefreshFromResult"),
     ToServiceObject: Symbol("PersistentObjectAttribute_ToServiceObject"),

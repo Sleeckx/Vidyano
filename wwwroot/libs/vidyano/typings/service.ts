@@ -261,7 +261,6 @@ export declare type PersistentObjectAttribute = {
      * Gets the actions that should be invoked directly on the attribute.
      */
     actions: string[];
-    disableSort?: boolean;
     id?: string;
     column?: number;
     name: string;

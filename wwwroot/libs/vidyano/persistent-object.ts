@@ -754,14 +754,9 @@ export class PersistentObject extends ServiceObjectWithActions {
      * @param sender The attribute initiating the refresh.
      */
     #prepareAttributesForRefresh(sender: PersistentObjectAttribute) {
-        this.attributes
-            .filter(a => a.id !== sender.id)
-            .forEach(attr => {
-                (<any>attr)._refreshServiceValue = (<any>attr)._serviceValue;
-                if (attr instanceof PersistentObjectAttributeWithReference) {
-                    const attrWithRef = <any>attr;
-                    attrWithRef._refreshObjectId = attrWithRef.objectId;
-                }
-            });
+        for (const attribute of this.attributes) {
+            if (attribute.id !== sender.id)
+                attribute[PersistentObjectAttributeSymbols.BackupServiceValue]();
+        }
     }
 }
