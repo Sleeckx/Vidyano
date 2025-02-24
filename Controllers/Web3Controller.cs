@@ -36,17 +36,30 @@ namespace VidyanoWeb3.Controllers
 
             // TODO: Verify that served files are permitted
 
-            if (!id.StartsWith("libs/modules/")) {
+            if (!id.StartsWith("libs/modules/"))
+            {
                 var filePath = Path.Combine(Vulcanizer.RootPath, id);
                 if (!System.IO.File.Exists(filePath))
                     return NotFound();
 
                 return Content(Vulcanizer.Generate(filePath), mimeType);
             }
-                
+
             var moduleFilePath = Path.Combine(Vulcanizer.RootPath, id.Replace("libs/modules/", "../node_modules/"));
             if (!System.IO.File.Exists(moduleFilePath))
-                return NotFound();
+            {
+                if (!moduleFilePath.EndsWith(".js"))
+                {
+                    moduleFilePath = moduleFilePath + ".js";
+                    mimeType = "application/javascript";
+                }
+
+                if (!System.IO.File.Exists(moduleFilePath))
+                {
+                    Console.WriteLine($"{moduleFilePath} was not found");
+                    return NotFound();
+                }
+            }
 
             return Content(System.IO.File.ReadAllText(moduleFilePath), mimeType);
         }
