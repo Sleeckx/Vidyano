@@ -69,6 +69,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         this[PersistentObjectSymbols.Dto] = po;
         this[PersistentObjectSymbols.IsPersistentObject] = true;
         this[PersistentObjectSymbols.PrepareAttributesForRefresh] = this.#prepareAttributesForRefresh.bind(this);
+        this[PersistentObjectSymbols.RefreshTabsAndGroups] = this.#refreshTabsAndGroups.bind(this);
         this[PersistentObjectSymbols.RefreshFromResult] = this.#refreshFromResult.bind(this);
 
         this.#id = po.id;
@@ -540,13 +541,8 @@ export class PersistentObject extends ServiceObjectWithActions {
 
         this.attributes.forEach(attr => {
             let serviceAttr = result.attributes.find(serviceAttr => serviceAttr.id === attr.id);
-            if (serviceAttr) {
-                if (!(serviceAttr instanceof PersistentObjectAttribute))
-                    serviceAttr = this.#createPersistentObjectAttribute(serviceAttr);
-
-                if (attr[PersistentObjectAttributeSymbols.RefreshFromResult](serviceAttr, resultWins))
-                    changedAttributes.push(attr);
-            }
+            if (serviceAttr && attr[PersistentObjectAttributeSymbols.RefreshFromResult](serviceAttr, resultWins))
+                changedAttributes.push(attr);
 
             if (attr.isValueChanged)
                 isDirty = true;
@@ -566,7 +562,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         });
 
         if (changedAttributes.length > 0)
-            this.refreshTabsAndGroups(...changedAttributes);
+            this.#refreshTabsAndGroups(...changedAttributes);
 
         this.setNotification(result.notification, result.notificationType, result.notificationDuration);
         this.#setIsDirty(isDirty, true);
@@ -601,7 +597,7 @@ export class PersistentObject extends ServiceObjectWithActions {
      * Rebuilds the tabs and groups based on changed attributes.
      * @param changedAttributes The attributes that have been modified.
      */
-    refreshTabsAndGroups(...changedAttributes: PersistentObjectAttribute[]) {
+    #refreshTabsAndGroups(...changedAttributes: PersistentObjectAttribute[]) {
         const tabGroupsChanged = new Set<PersistentObjectAttributeTab>();
         const tabGroupAttributesChanged = new Set<PersistentObjectAttributeGroup>();
         let tabsRemoved = false;

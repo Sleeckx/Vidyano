@@ -1,3 +1,4 @@
+import type * as Dto from "./typings/service.js"
 import type { PersistentObject } from "./persistent-object.js"
 import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Query } from "./query.js"
@@ -76,20 +77,24 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
         return po;
     }
 
-    _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
-        const asDetailAttr = <PersistentObjectAttributeAsDetail>resultAttr;
-
+    _refreshFromResult(resultAttr: Dto.PersistentObjectAttributeAsDetail, resultWins: boolean): boolean {
         const visibilityChanged = super._refreshFromResult(resultAttr, resultWins);
 
-        if (this.objects != null && asDetailAttr.objects != null) {
-            const isEditing = this.parent.isEditing;
-            this._setObjects(asDetailAttr.objects.map(obj => {
-                obj.parent = this.parent;
-                obj.ownerDetailAttribute = this;
-                if (isEditing)
-                    obj.beginEdit();
-                return obj;
-            }));
+        if (this.objects != null && resultAttr.objects != null) {
+            if (resultAttr.objects) {
+                this._objects = resultAttr.objects.map(po => {
+                    const detailObj = this.service.hooks.onConstructPersistentObject(this.service, po);
+                    detailObj.parent = this.parent;
+                    detailObj.ownerDetailAttribute = this;
+
+                    if (this.parent.isEditing)
+                        detailObj.beginEdit();
+    
+                    return detailObj;
+                });
+            }
+            else
+                this._setObjects([]);
         }
 
         return visibilityChanged;

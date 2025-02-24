@@ -1,3 +1,4 @@
+import type * as Dto from "./typings/service.js"
 import type { PersistentObject } from "./persistent-object.js"
 import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Query } from "./query.js"
@@ -72,7 +73,7 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return this.parent.queueWork(() => this.service.getPersistentObject(this.parent, this.lookup.persistentObject.id, this.objectId));
     }
 
-    protected _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
+    protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttribute, resultWins: boolean): boolean {
         // Cast to PersistentObjectAttributeWithReference to access more properties
         const resultAttrWithRef = <PersistentObjectAttributeWithReference><unknown>resultAttr;
 

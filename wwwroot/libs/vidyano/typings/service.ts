@@ -257,6 +257,10 @@ export declare type PersistentObject = Partial<{
 }>;
 export declare type PersistentObjectAttributeVisibility = "Always" | "Read" | "New" | "Never" | "Query" | "Read, Query" | "Read, New" | "Query, New";
 export declare type PersistentObjectAttribute = {
+    /*
+     * Gets the actions that should be invoked directly on the attribute.
+     */
+    actions: string[];
     disableSort?: boolean;
     id?: string;
     column?: number;
@@ -280,7 +284,6 @@ export declare type PersistentObjectAttribute = {
     validationError?: string;
     triggersRefresh?: boolean;
     options?: string[];
-    actions?: string[];
     tag?: any;
 };
 export declare type PersistentObjectAttributeWithReference = {

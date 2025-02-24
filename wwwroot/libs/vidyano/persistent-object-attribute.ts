@@ -8,7 +8,7 @@ import { CultureInfo } from "./cultures.js"
 import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 import type { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
 import { Action } from "./action.js"
-import { PersistentObjectAttributeSymbols } from "./advanced.js"
+import { PersistentObjectAttributeSymbols, PersistentObjectSymbols } from "./advanced.js"
 import { DataType } from "./service-data-type.js"
 
 export type PersistentObjectAttributeOption = KeyValuePair<string, string>;
@@ -57,6 +57,7 @@ export class PersistentObjectAttribute extends ServiceObject {
     constructor(service: Service, attr: Dto.PersistentObjectAttribute, public parent: PersistentObject) {
         super(service);
 
+        this[PersistentObjectAttributeSymbols.IsPersistentObjectAttribute] = true;
         this[PersistentObjectAttributeSymbols.RefreshFromResult] = this._refreshFromResult.bind(this);
         this[PersistentObjectAttributeSymbols.ToServiceObject] = this._toServiceObject.bind(this);
 
@@ -165,7 +166,7 @@ export class PersistentObjectAttribute extends ServiceObject {
             this.notifyPropertyChanged("isVisible", this._isVisible, oldIsVisible);
 
             if (typeof(oldVisibility) !== "undefined" && !this.parent.isBusy)
-                this.parent.refreshTabsAndGroups(this);
+                this.parent[PersistentObjectSymbols.RefreshTabsAndGroups](this);
         }
     }
 
@@ -411,13 +412,18 @@ export class PersistentObjectAttribute extends ServiceObject {
         return result;
     }
 
-    protected _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
+    protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttribute, resultWins: boolean): boolean {
         let visibilityChanged = false;
 
         this.label = resultAttr.label;
 
-        this._setActions(resultAttr.actions);
-        this._setOptions(resultAttr._serviceOptions);
+        const newActions = <any>[];
+        Action.addActions(this.service, this.parent, newActions, resultAttr.actions || []);
+        this._setActions(newActions);
+
+        if (this.type !== "Reference")
+            this._setOptions(resultAttr.options);
+
         this._setIsReadOnly(resultAttr.isReadOnly);
         this._setRules(resultAttr.rules);
         this._setIsRequired(resultAttr.isRequired);
@@ -427,11 +433,12 @@ export class PersistentObjectAttribute extends ServiceObject {
             visibilityChanged = true;
         }
 
-        if (resultWins || (this._serviceValue !== resultAttr._serviceValue && (this.isReadOnly || this._refreshServiceValue !== resultAttr._serviceValue))) {
+        const resultAttrValue = resultAttr.value !== undefined ? resultAttr.value : null;
+        if (resultWins || (this._serviceValue !== resultAttrValue && (this.isReadOnly || this._refreshServiceValue !== resultAttrValue))) {
             const oldDisplayValue = this.displayValue;
             const oldValue = this.value;
 
-            this._serviceValue = resultAttr._serviceValue;
+            this._serviceValue = resultAttrValue;
             this._lastParsedValue = undefined;
 
             this.notifyPropertyChanged("value", this.value, oldValue);
@@ -443,7 +450,7 @@ export class PersistentObjectAttribute extends ServiceObject {
             this.isValueChanged = resultAttr.isValueChanged;
         }
 
-        this._tag = resultAttr._tag;
+        this._tag = resultAttr.tag;
         this._refreshServiceValue = undefined;
 
         this.triggersRefresh = resultAttr.triggersRefresh;
