@@ -6,4 +6,5 @@ export const PersistentObjectAttributeSymbols = {
 export const PersistentObjectSymbols = {
     Dto: Symbol("PersistentObject_Dto"),
     PrepareAttributesForRefresh: Symbol("PersistentObject_PrepareAttributesForRefresh"),
+    RefreshFromResult: Symbol("PersistentObject_RefreshFromResult"),
 };

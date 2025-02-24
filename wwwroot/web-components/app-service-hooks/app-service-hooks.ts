@@ -119,8 +119,7 @@ export class AppServiceHooks extends AppServiceHooksBase {
                             return;
 
                         try {
-                            const po = await this.app.service.getPersistentObject(cacheEntry.persistentObject.parent, cacheEntry.persistentObject.id, cacheEntry.persistentObject.objectId);
-                            cacheEntry.persistentObject.refreshFromResult(po, true);
+                            await cacheEntry.persistentObject.refresh();
                         }
                         catch (e) {
                             cacheEntry.persistentObject.setNotification(e);

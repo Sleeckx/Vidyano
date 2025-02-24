@@ -6,6 +6,7 @@ import { ServiceObject } from "./service-object.js"
 import type { ServiceObjectWithActions } from "./service-object-with-actions.js"
 import { PersistentObject } from "./persistent-object.js"
 import type { Query } from "./query.js"
+import { PersistentObjectSymbols } from "./advanced.js"
 
 export interface IActionExecuteOptions {
     menuOption?: number;
@@ -268,7 +269,7 @@ export class Action extends ServiceObject {
                             this.query.search();
                     }
                 } else if (this.parent != null && (po.fullTypeName === this.parent.fullTypeName || po.isNew === this.parent.isNew) && po.id === this.parent.id && po.objectId === this.parent.objectId) {
-                    this.parent.refreshFromResult(po);
+                    this.parent[PersistentObjectSymbols.RefreshFromResult](po);
                 } else {
                     po.ownerQuery = this.query;
                     po.ownerPersistentObject = this.parent;

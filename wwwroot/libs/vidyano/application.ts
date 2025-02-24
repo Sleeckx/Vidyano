@@ -2,6 +2,7 @@ import type * as Dto from "./typings/service.js"
 import { PersistentObject } from "./persistent-object.js"
 import type { Service } from "./service.js"
 import { ProgramUnit } from "./program-unit.js"
+import { PersistentObjectSymbols } from "./advanced.js"
 
 export class Application extends PersistentObject {
     private _userId: string;
@@ -134,7 +135,7 @@ export class Application extends PersistentObject {
                 this._session = null;
         } else {
             if (this._session)
-                this._session.refreshFromResult(new PersistentObject(this.service, session));
+                this._session[PersistentObjectSymbols.RefreshFromResult](new PersistentObject(this.service, session));
             else
                 this._session = new PersistentObject(this.service, session);
         }

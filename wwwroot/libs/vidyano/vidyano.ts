@@ -12,6 +12,7 @@ export * from "./common/noop.js"
 export * from "./common/sleep.js"
 
 export * from "./service.js"
+export * as Advanced from "./advanced.js"
 
 export * from "./action.js"
 export * from "./action-definition.js"

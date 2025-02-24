@@ -68,6 +68,7 @@ export class PersistentObject extends ServiceObjectWithActions {
 
         this[PersistentObjectSymbols.Dto] = po;
         this[PersistentObjectSymbols.PrepareAttributesForRefresh] = this.#prepareAttributesForRefresh.bind(this);
+        this[PersistentObjectSymbols.RefreshFromResult] = this.#refreshFromResult.bind(this);
 
         this.#id = po.id;
         this.#isSystem = !!po.isSystem;
@@ -414,7 +415,7 @@ export class PersistentObject extends ServiceObjectWithActions {
 
             const backup = this.#lastResultBackup;
             this.#lastResultBackup = null;
-            this.refreshFromResult(backup, true);
+            this.#refreshFromResult(backup, true);
 
             if (!!this.notification)
                 this.setNotification();
@@ -440,7 +441,7 @@ export class PersistentObject extends ServiceObjectWithActions {
                     return false;
 
                 const wasNew = this.isNew;
-                this.refreshFromResult(po, true);
+                this.#refreshFromResult(po, true);
 
                 if (!this.notification || this.notification.trim().length === 0 || this.notificationType !== "Error") {
                     this.#setIsDirty(false);
@@ -469,6 +470,14 @@ export class PersistentObject extends ServiceObjectWithActions {
 
             return true;
         });
+    }
+
+    /**
+     * Refreshes the object state from the service.
+     */
+    async refresh() {
+        const po = await this.service.getPersistentObject(this.parent, this.id, this.objectId);
+        this.#refreshFromResult(po, true);
     }
 
     /**
@@ -505,7 +514,7 @@ export class PersistentObject extends ServiceObjectWithActions {
      * @param result The new data from the service.
      * @param resultWins If true, the new data overrides current values.
      */
-    refreshFromResult(po: PersistentObject | Dto.PersistentObject, resultWins: boolean = false) {
+    #refreshFromResult(po: PersistentObject | Dto.PersistentObject, resultWins: boolean = false) {
         const result = po instanceof PersistentObject ? po[PersistentObjectSymbols.Dto] : po;
 
         const changedAttributes: PersistentObjectAttribute[] = [];
@@ -720,7 +729,7 @@ export class PersistentObject extends ServiceObjectWithActions {
                 null,
                 { RefreshedPersistentObjectAttributeId: attr.id }
             );
-            if (this.isEditing) this.refreshFromResult(result);
+            if (this.isEditing) this.#refreshFromResult(result);
 
             return true;
         };

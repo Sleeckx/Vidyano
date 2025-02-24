@@ -59,7 +59,7 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
 
             const result = await this.service.executeAction("PersistentObject.SelectReference", this.parent, this.lookup, <QueryResultItem[]>selectedItems, { PersistentObjectAttributeId: this.id });
             if (result)
-                this.parent.refreshFromResult(result);
+                this.parent[PersistentObjectSymbols.RefreshFromResult](result);
 
             return true;
         });

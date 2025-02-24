@@ -27,7 +27,7 @@ export class ServiceObjectWithActions extends ServiceObject {
      * @param actionNames - Optional list of action names.
      * @param actionLabels - Optional mapping of action labels.
      */
-    constructor(service: Service, actionNames: string[] = [], actionLabels?: { [key: string]: string }) {
+    constructor(service: Service, actionNames: string[], actionLabels: { [key: string]: string }) {
         super(service);
 
         this.#actionNames = actionNames;

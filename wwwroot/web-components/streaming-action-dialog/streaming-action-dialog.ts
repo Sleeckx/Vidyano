@@ -79,7 +79,7 @@ export class StreamingActionDialog extends Dialog {
                 this.style.setProperty("--vi-streaming-action-dialog-height", details.height);
 
             if (details.notification) {
-                const svcObject = new Vidyano.ServiceObjectWithActions(this.service);
+                const svcObject = new Vidyano.ServiceObjectWithActions(this.service, [], {});
                 svcObject.setNotification(details.notification, details.notificationType);
 
                 this._setNotificationObject(svcObject);
