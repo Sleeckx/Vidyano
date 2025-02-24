@@ -49,6 +49,11 @@ export class QueryResultItemValue extends ServiceObject {
     }
 
     _toServiceObject() {
-        return this.copyProperties(["key", "value", "persistentObjectId", "objectId"]);
+        return this._copyPropertiesFromValues({
+            key: this.key,
+            value: this.value,
+            persistentObjectId: this.persistentObjectId,
+            objectId: this.objectId
+        });
     }
 }

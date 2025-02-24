@@ -43,7 +43,7 @@ export class Action extends ServiceObject {
     displayName: string;
     dependentActions = [];
 
-    constructor(public service: Service, public definition: ActionDefinition, public owner: ServiceObjectWithActions) {
+    constructor(service: Service, public definition: ActionDefinition, public owner: ServiceObjectWithActions) {
         super(service);
 
         this.displayName = definition.displayName;

@@ -111,7 +111,7 @@ export class QueryResultItem extends ServiceObject {
     }
 
     _toServiceObject() {
-        const result = this.copyProperties(["id"]);
+        const result = this._copyPropertiesFromValues({ id: this.id });
         result.values = this.rawValues.map(v => v._toServiceObject());
 
         return result;

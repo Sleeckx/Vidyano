@@ -8,6 +8,7 @@ import { CultureInfo } from "./cultures.js"
 import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 import type { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
 import { Action } from "./action.js"
+import { PersistentObjectAttributeSymbols } from "./advanced.js"
 
 export type PersistentObjectAttributeOption = KeyValuePair<string, string>;
 export class PersistentObjectAttribute extends ServiceObject {
@@ -54,6 +55,9 @@ export class PersistentObjectAttribute extends ServiceObject {
     constructor(service: Service, attr: Dto.PersistentObjectAttribute, parent: PersistentObject);
     constructor(service: Service, attr: Dto.PersistentObjectAttribute, public parent: PersistentObject) {
         super(service);
+
+        this[PersistentObjectAttributeSymbols.RefreshFromResult] = this._refreshFromResult.bind(this);
+        this[PersistentObjectAttributeSymbols.ToServiceObject] = this._toServiceObject.bind(this);
 
         this.id = attr.id;
         this._isSystem = !!attr.isSystem;
@@ -298,7 +302,7 @@ export class PersistentObjectAttribute extends ServiceObject {
         // If value is equal
         if (this._cachedValue === val || (this._serviceValue == null && String.isNullOrEmpty(newServiceValue)) || this._serviceValue === newServiceValue) {
             if (allowRefresh && this._shouldRefresh)
-                await this._triggerAttributeRefresh();
+                await this.triggerRefresh();
         }
         else {
             const oldDisplayValue = this.displayValue;
@@ -312,7 +316,7 @@ export class PersistentObjectAttribute extends ServiceObject {
 
             if (this.triggersRefresh) {
                 if (allowRefresh)
-                    await this._triggerAttributeRefresh();
+                    await this.triggerRefresh();
                 else
                     this._shouldRefresh = true;
             }
@@ -374,10 +378,28 @@ export class PersistentObjectAttribute extends ServiceObject {
         return defaultValue;
     }
 
-    _toServiceObject() {
-        const result = this.copyProperties(["id", "name", "label", "type", "isReadOnly", "triggersRefresh", "isRequired", "differsInBulkEditMode", "isValueChanged", "displayAttribute", "objectId", "visibility"]);
-        result.value = this._serviceValue;
+    triggerRefresh(immediate?: boolean): Promise<any> {
+        this._shouldRefresh = false;
+        return this.parent.triggerAttributeRefresh(this, immediate);
+    }
 
+    protected _toServiceObject(inheritedPropertyValues?: Record<string, any>) {
+        const initialPropertyValues = {
+            id: this.id,
+            name: this.name,
+            label: this.label,
+            type: this.type,
+            isReadOnly: this.isReadOnly,
+            triggersRefresh: this.triggersRefresh,
+            isRequired: this.isRequired,
+            differsInBulkEditMode: this.parent.isBulkEdit && this.isValueChanged,
+            isValueChanged: this.isValueChanged,
+            visibility: this.visibility
+        };
+
+        const result = this._copyPropertiesFromValues(!inheritedPropertyValues ? initialPropertyValues : { ...initialPropertyValues, ...inheritedPropertyValues});
+
+        result.value = this._serviceValue;
         result.actions = this.actions.map(a => a.name);
 
         if (this.options && this.options.length > 0 && this.isValueChanged)
@@ -388,7 +410,7 @@ export class PersistentObjectAttribute extends ServiceObject {
         return result;
     }
 
-    _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
+    protected _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
         let visibilityChanged = false;
 
         this.label = resultAttr.label;
@@ -439,11 +461,6 @@ export class PersistentObjectAttribute extends ServiceObject {
         }
 
         return visibilityChanged;
-    }
-
-    _triggerAttributeRefresh(immediate?: boolean): Promise<any> {
-        this._shouldRefresh = false;
-        return this.parent._triggerAttributeRefresh(this, immediate);
     }
 
     protected _setOptions(options: string[]) {

@@ -14,7 +14,7 @@ export class ActionGroup extends ServiceObject {
     private _canExecute: boolean = false;
     private _isVisible: boolean = false;
 
-    constructor(public service: Service, public definition: ActionDefinition) {
+    constructor(service: Service, public definition: ActionDefinition) {
         super(service);
     }
 

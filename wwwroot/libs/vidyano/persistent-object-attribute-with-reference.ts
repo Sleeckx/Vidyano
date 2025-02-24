@@ -3,6 +3,7 @@ import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Query } from "./query.js"
 import type { QueryResultItem } from "./query-result-item.js"
 import type { Service } from "./service.js"
+import { PersistentObjectSymbols } from "./advanced.js"
 
 export class PersistentObjectAttributeWithReference extends PersistentObjectAttribute {
     lookup: Query;
@@ -50,7 +51,7 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
             if (this.isReadOnly)
                 throw "Attribute is read-only.";
 
-            this.parent._prepareAttributesForRefresh(this);
+            this.parent[PersistentObjectSymbols.PrepareAttributesForRefresh](this);
             if (selectedItems.length && selectedItems.length > 0 && typeof selectedItems[0] === "string") {
                 const selectedObjectIds = <string[]>selectedItems;
                 selectedItems = selectedObjectIds.map(id => this.service.hooks.onConstructQueryResultItem(this.service, { id: id }, null));
@@ -71,8 +72,9 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return this.parent.queueWork(() => this.service.getPersistentObject(this.parent, this.lookup.persistentObject.id, this.objectId));
     }
 
-    _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
-        const resultAttrWithRef = <PersistentObjectAttributeWithReference>resultAttr;
+    protected _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean {
+        // Cast to PersistentObjectAttributeWithReference to access more properties
+        const resultAttrWithRef = <PersistentObjectAttributeWithReference><unknown>resultAttr;
 
         if (resultWins || this.objectId !== resultAttrWithRef.objectId) {
             this.objectId = resultAttrWithRef.objectId;
@@ -85,7 +87,13 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         this.canAddNewReference = resultAttrWithRef.canAddNewReference;
         this.selectInPlace = resultAttrWithRef.selectInPlace;
 
-
         return visibilityChanged;
+    }
+
+    protected _toServiceObject(): any {
+        return super._toServiceObject({
+            "objectId": this.objectId,
+            "displayAttribute": this.displayAttribute,
+        });
     }
 }

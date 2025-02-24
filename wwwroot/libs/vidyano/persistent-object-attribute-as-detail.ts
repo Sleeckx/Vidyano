@@ -118,7 +118,7 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
         this.parent.triggerDirty();
         if (this.triggersRefresh) {
             if (allowRefresh)
-                await this._triggerAttributeRefresh();
+                await this.triggerRefresh();
             else
                 this._shouldRefresh = true;
         }

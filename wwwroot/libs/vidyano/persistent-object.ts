@@ -1,13 +1,12 @@
 import type * as Dto from "./typings/service.js"
 import { ServiceObjectWithActions } from "./service-object-with-actions.js"
-import type { Action } from "./action.js"
 import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import { PersistentObjectTab, PersistentObjectAttributeTab, PersistentObjectQueryTab } from "./persistent-object-tab.js"
 import type { Query } from "./query.js"
 import type { Service } from "./service.js"
-import type { PersistentObjectAttributeAsDetail } from "./persistent-object-attribute-as-detail.js"
 import { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
 import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
+import { PersistentObjectSymbols, PersistentObjectAttributeSymbols } from "./advanced.js"
 
 /**
  * Defines available layout modes when displaying persistent objects.
@@ -22,15 +21,15 @@ export enum PersistentObjectLayoutMode {
  * saving, refreshing data, and managing attributes and tabs.
  */
 export class PersistentObject extends ServiceObjectWithActions {
-    #isSystem;
+    readonly #isSystem;
     #lastResult;
     #lastUpdated;
     #lastResultBackup;
     #securityToken;
     #isEditing = false;
     #isDirty = false;
-    #id;
-    #type;
+    readonly #id;
+    readonly #type;
     #breadcrumb;
     #isDeleted;
     #tabs;
@@ -38,39 +37,37 @@ export class PersistentObject extends ServiceObjectWithActions {
     #tag;
     readonly isBreadcrumbSensitive;
     readonly forceFromAction;
-    fullTypeName;
-    label;
+    readonly fullTypeName;
+    readonly label;
     objectId;
-    isHidden;
+    readonly isHidden;
     isNew;
-    isReadOnly;
-    queryLayoutMode;
-    newOptions;
-    ignoreCheckRules;
+    readonly isReadOnly;
+    readonly queryLayoutMode;
+    readonly newOptions;
+    readonly ignoreCheckRules;
     stateBehavior;
-    dialogSaveAction;
+    readonly dialogSaveAction;
     parent;
     ownerDetailAttribute;
     ownerAttributeWithReference;
     ownerPersistentObject;
     ownerQuery;
-    bulkObjectIds;
-    queriesToRefresh = [];
-    attributes;
-    queries;
+    readonly bulkObjectIds;
+    readonly queriesToRefresh = [];
+    readonly attributes: PersistentObjectAttribute[] & Record<string, PersistentObjectAttribute>;
+    readonly queries: Query[] & Record<string, Query>;
 
     /**
      * Instantiates a persistent object using a service instance and initial data.
      * @param service The service context providing hooks and actions.
      * @param po The data representing the persistent object.
      */
-    constructor(service: Service, po: Dto.PersistentObject);
-    constructor(service: Service, po: any) {
-        super(
-            service,
-            (po._actionNames || po.actions || []).map(a => a === "Edit" && po.isNew ? "Save" : a),
-            po.actionLabels
-        );
+    constructor(service: Service, po: Dto.PersistentObject) {
+        super(service, po.actions, po.actionLabels);
+
+        this[PersistentObjectSymbols.Dto] = po;
+        this[PersistentObjectSymbols.PrepareAttributesForRefresh] = this.#prepareAttributesForRefresh.bind(this);
 
         this.#id = po.id;
         this.#isSystem = !!po.isSystem;
@@ -96,16 +93,19 @@ export class PersistentObject extends ServiceObjectWithActions {
         this.queriesToRefresh = po.queriesToRefresh || [];
         this.parent = po.parent != null ? service.hooks.onConstructPersistentObject(service, po.parent) : null;
 
-        this.attributes = po.attributes
-            ? (<PersistentObjectAttribute[]>po.attributes).map(attr => this.#createPersistentObjectAttribute(attr))
-            : [];
-        this.attributes.forEach(attr => this.attributes[attr.name] = attr);
+        // Initialize attributes
+        const attributes = po.attributes?.map(attr => this.#createPersistentObjectAttribute(attr)) || [];
+        attributes.forEach(attr => attributes[attr.name] = attr);
 
-        this.queries = po.queries
-            ? (<Query[]>po.queries).map(query => service.hooks.onConstructQuery(service, query, this)).orderBy(q => q.offset)
-            : [];
-        this.queries.forEach(query => this.queries[query.name] = query);
+        this.attributes = attributes as PersistentObjectAttribute[] & Record<string, PersistentObjectAttribute>;
 
+        // Initialize queries
+        const queries = po.queries?.map(query => service.hooks.onConstructQuery(service, query, this)).orderBy(q => q.offset) || []; 
+        queries.forEach(query => queries[query.name] = query);
+
+        this.queries = queries as Query[] & Record<string, Query>;
+
+        // Initialize tabs
         const attributeTabs = po.tabs
             ? this.attributes
                   .orderBy(attr => attr.offset)
@@ -180,13 +180,13 @@ export class PersistentObject extends ServiceObjectWithActions {
     /**
      * Creates an attribute instance based on its properties, choosing between
      * standard, reference, or detail attribute types.
-     * @param attr The raw attribute data.
+     * @param attr The attribute DTO.
      */
-    #createPersistentObjectAttribute(attr: PersistentObjectAttribute): PersistentObjectAttribute {
-        if ((<PersistentObjectAttributeWithReference>attr).displayAttribute || (<PersistentObjectAttributeWithReference>attr).objectId)
+    #createPersistentObjectAttribute(attr: Dto.PersistentObjectAttribute): PersistentObjectAttribute {
+        if ((<Dto.PersistentObjectAttributeWithReference>attr).displayAttribute || (<Dto.PersistentObjectAttributeWithReference>attr).objectId)
             return this.service.hooks.onConstructPersistentObjectAttributeWithReference(this.service, attr, this);
 
-        if ((<PersistentObjectAttributeAsDetail>attr).objects || (<PersistentObjectAttributeAsDetail>attr).details)
+        if ((<Dto.PersistentObjectAttributeAsDetail>attr).objects || (<Dto.PersistentObjectAttributeAsDetail>attr).details)
             return this.service.hooks.onConstructPersistentObjectAttributeAsDetail(this.service, attr, this);
 
         return this.service.hooks.onConstructPersistentObjectAttribute(this.service, attr, this);
@@ -351,7 +351,7 @@ export class PersistentObject extends ServiceObjectWithActions {
      * Gets the current value of a specified attribute.
      * @param name The attribute's name.
      */
-    getAttributeValue(name: string): any {
+    getAttributeValue<T = any>(name: string): T {
         const attr = this.attributes[name];
         return attr != null ? attr.value : null;
     }
@@ -433,7 +433,7 @@ export class PersistentObject extends ServiceObjectWithActions {
             if (this.isEditing) {
                 const attributesToRefresh = this.attributes.filter(attr => attr.shouldRefresh);
                 for (let i = 0; i < attributesToRefresh.length; i++)
-                    await attributesToRefresh[i]._triggerAttributeRefresh(true);
+                    await attributesToRefresh[i].triggerRefresh(true);
 
                 const po = await this.service.executeAction("PersistentObject.Save", this, null, null, null);
                 if (!po)
@@ -476,7 +476,7 @@ export class PersistentObject extends ServiceObjectWithActions {
      * @param skipParent If true, parent data is excluded.
      */
     toServiceObject(skipParent: boolean = false): any {
-        const result = this.copyPropertiesFromValues({
+        const result = this._copyPropertiesFromValues({
             "id": this.#id,
             "type": this.#type,
             "objectId": this.objectId,
@@ -493,7 +493,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         if (this.parent && !skipParent)
             result.parent = this.parent.toServiceObject();
         if (this.attributes)
-            result.attributes = this.attributes.map(attr => attr._toServiceObject());
+            result.attributes = this.attributes.map(attr => attr[PersistentObjectAttributeSymbols.ToServiceObject]());
         if (this.#lastResult.metadata != null)
             result.metadata = this.#lastResult.metadata;
 
@@ -505,9 +505,8 @@ export class PersistentObject extends ServiceObjectWithActions {
      * @param result The new data from the service.
      * @param resultWins If true, the new data overrides current values.
      */
-    refreshFromResult(result: PersistentObject, resultWins: boolean = false) {
-        if (result instanceof PersistentObject)
-            result = result.#lastResult;
+    refreshFromResult(po: PersistentObject | Dto.PersistentObject, resultWins: boolean = false) {
+        const result = po instanceof PersistentObject ? po[PersistentObjectSymbols.Dto] : po;
 
         const changedAttributes: PersistentObjectAttribute[] = [];
         let isDirty = false;
@@ -535,7 +534,7 @@ export class PersistentObject extends ServiceObjectWithActions {
                 if (!(serviceAttr instanceof PersistentObjectAttribute))
                     serviceAttr = this.#createPersistentObjectAttribute(serviceAttr);
 
-                if (attr._refreshFromResult(serviceAttr, resultWins))
+                if (attr[PersistentObjectAttributeSymbols.RefreshFromResult](serviceAttr, resultWins))
                     changedAttributes.push(attr);
             }
 
@@ -707,10 +706,11 @@ export class PersistentObject extends ServiceObjectWithActions {
      * @param attr The attribute to refresh.
      * @param immediate If true, performs the refresh immediately.
      */
-    #triggerAttributeRefresh(attr: PersistentObjectAttribute, immediate?: boolean): Promise<boolean> {
+    triggerAttributeRefresh(attr: PersistentObjectAttribute, immediate?: boolean): Promise<boolean> {
         const attrValue = attr.value;
         const work = async () => {
-            if (attrValue !== attr.value) return false;
+            if (attrValue !== attr.value)
+                return false;
 
             this.#prepareAttributesForRefresh(attr);
             const result = await this.service.executeAction(

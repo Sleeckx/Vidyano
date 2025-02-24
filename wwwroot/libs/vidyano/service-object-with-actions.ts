@@ -29,6 +29,7 @@ export class ServiceObjectWithActions extends ServiceObject {
      */
     constructor(service: Service, actionNames: string[] = [], actionLabels?: { [key: string]: string }) {
         super(service);
+
         this.#actionNames = actionNames;
         this.#actionLabels = actionLabels;
         this.#queue = new Queue(1);
