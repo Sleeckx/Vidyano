@@ -4,30 +4,32 @@ import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Query } from "./query.js"
 import type { Service } from "./service.js"
 
+/**
+ * Represents a persistent object attribute that relates to a list of objects.
+ */
 export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute {
-    private _objects: PersistentObject[];
-    details: Query;
-    lookupAttribute: string;
+    #details: Query;
+    #lookupAttribute: string;
+    #objects: PersistentObject[];
 
-    constructor(service: Service, attr: any, parent: PersistentObject) {
+    /**
+     * Initializes a new instance of PersistentObjectAttributeAsDetail.
+     * @param service The service instance.
+     * @param attr The attribute data.
+     * @param parent The parent persistent object.
+     */
+    constructor(service: Service, attr: Dto.PersistentObjectAttributeAsDetail, parent: PersistentObject) {
         super(service, attr, parent);
 
-        if (attr.details)
-            this.details = this.service.hooks.onConstructQuery(service, attr.details, parent, false, 1);
-        else
-            this.details = null;
+        this.#details = attr.details ? this.service.hooks.onConstructQuery(service, attr.details, parent, false, 1) : null;
+        this.#lookupAttribute = attr.lookupAttribute;
+        this.#objects = attr.objects ? attr.objects.map(po => {
+            const detailObj = this.service.hooks.onConstructPersistentObject(service, po);
+            detailObj.parent = parent;
+            detailObj.ownerDetailAttribute = this;
 
-        if (attr.objects) {
-            this._objects = attr.objects.map(po => {
-                const detailObj = this.service.hooks.onConstructPersistentObject(service, po);
-                detailObj.parent = this.parent;
-                detailObj.ownerDetailAttribute = this;
-
-                return detailObj;
-            });
-        }
-        else
-            this._objects = [];
+            return detailObj;
+        }) : [];
 
         this.parent.propertyChanged.attach((sender, args) => {
             if (args.propertyName === "isEditing" && args.newValue)
@@ -39,16 +41,54 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
                     this.objects.forEach(obj => obj.unfreeze());
             }
         });
-
-        this.lookupAttribute = attr.lookupAttribute;
     }
 
+    /**
+     * Handles change events and triggers refresh if allowed.
+     * @param allowRefresh Indicates if refresh is allowed.
+     */
+    async onChanged(allowRefresh: boolean): Promise<any> {
+        if (!this.parent.isEditing || this.isReadOnly)
+            return this.value;
+
+        this.parent.triggerDirty();
+        if (this.triggersRefresh) {
+            if (allowRefresh)
+                await this.triggerRefresh();
+            else
+                this._shouldRefresh = true;
+        }
+
+        return this.value;
+    }
+
+    /**
+     * Gets the detail query.
+     */
+    get details(): Query {
+        return this.#details;
+    }
+
+    /**
+     * Gets the lookup attribute.
+     */
+    get lookupAttribute(): string {
+        return this.#lookupAttribute;
+    }
+
+    /**
+     * Gets the detail objects.
+     */
     get objects(): PersistentObject[] {
-        return this._objects;
+        return this.#objects;
     }
-    private _setObjects(objects: PersistentObject[]) {
-        if (objects === this._objects) {
-            if (!!objects && objects.length === this._objects.length) {
+    /**
+     * Sets the detail objects and notifies a property change if they differ.
+     * @param objects The new set of detail objects.
+     */
+    #setObjects(objects: PersistentObject[]) {
+        if (objects === this.#objects) {
+            if (!!objects && objects.length === this.#objects.length) {
                 let hasDifferences: boolean;
                 for (let n = 0; n < objects.length; n++) {
                     if (objects[n] !== this.objects[n]) {
@@ -63,9 +103,13 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
         }
 
         const oldObjects = this.objects;
-        this.notifyPropertyChanged("objects", this._objects = objects, oldObjects);
+        this.notifyPropertyChanged("objects", this.#objects = objects, oldObjects);
     }
 
+    /**
+     * Creates a new detail object.
+     * @returns A promise that resolves to the new detail object.
+     */
     async newObject(): Promise<PersistentObject> {
         const po = await this.details.actions["New"].execute({ throwExceptions: true, skipOpen: true });
         if (!po)
@@ -77,12 +121,15 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
         return po;
     }
 
-    _refreshFromResult(resultAttr: Dto.PersistentObjectAttributeAsDetail, resultWins: boolean): boolean {
+    /**
+     * @inheritdoc
+     */
+    protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttributeAsDetail, resultWins: boolean): boolean {
         const visibilityChanged = super._refreshFromResult(resultAttr, resultWins);
 
         if (this.objects != null && resultAttr.objects != null) {
             if (resultAttr.objects) {
-                this._objects = resultAttr.objects.map(po => {
+                this.#objects = resultAttr.objects.map(po => {
                     const detailObj = this.service.hooks.onConstructPersistentObject(this.service, po);
                     detailObj.parent = this.parent;
                     detailObj.ownerDetailAttribute = this;
@@ -94,13 +141,16 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
                 });
             }
             else
-                this._setObjects([]);
+                this.#setObjects([]);
         }
 
         return visibilityChanged;
     }
 
-    _toServiceObject() {
+    /**
+     * @inheritdoc
+     */
+    protected _toServiceObject() {
         const result = super._toServiceObject();
 
         if (this.objects != null) {
@@ -114,20 +164,5 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
         }
 
         return result;
-    }
-
-    async onChanged(allowRefresh: boolean): Promise<any> {
-        if (!this.parent.isEditing || this.isReadOnly)
-            return this.value;
-
-        this.parent.triggerDirty();
-        if (this.triggersRefresh) {
-            if (allowRefresh)
-                await this.triggerRefresh();
-            else
-                this._shouldRefresh = true;
-        }
-
-        return this.value;
     }
 }

@@ -318,6 +318,11 @@ export declare type PersistentObjectAttributeAsDetail = {
     details: Query;
 
     /**
+     * Gets the optional name of a lookup attribute that can be used to select a reference when adding a new detail.
+     */
+    lookupAttribute: string;
+
+    /**
      * Gets the detail persistent objects for this instance.
      */
     objects: PersistentObject[];
