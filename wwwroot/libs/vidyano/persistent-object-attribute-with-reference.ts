@@ -6,6 +6,9 @@ import type { QueryResultItem } from "./query-result-item.js"
 import type { Service } from "./service.js"
 import { PersistentObjectSymbols } from "./advanced.js"
 
+/**
+ * Represents a persistent object attribute with reference.
+ */
 export class PersistentObjectAttributeWithReference extends PersistentObjectAttribute {
     #canAddNewReference: boolean;
     #displayAttribute: string;
@@ -13,6 +16,13 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
     #objectId: string;
     #selectInPlace: boolean;
 
+    /**
+     * Initializes a new instance of the attribute with reference.
+     *
+     * @param service The service instance.
+     * @param attr The attribute data.
+     * @param parent The parent persistent object.
+     */
     constructor(service: Service, attr: Dto.PersistentObjectAttributeWithReference, parent: PersistentObject) {
         super(service, attr, parent);
 
@@ -65,6 +75,9 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return this.#selectInPlace;
     }
 
+    /**
+     * Initiates the process to add a new reference if the attribute is not read-only.
+     */
     async addNewReference() {
         if (this.isReadOnly)
             return;
@@ -81,6 +94,11 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         }
     }
 
+    /**
+     * Updates the reference using the provided selected items or object id's.
+     * @param selectedItems The items or object id's for updating the reference.
+     * @returns A promise resolving to true when the update is complete.
+     */
     changeReference(selectedItems: QueryResultItem[] | string[]): Promise<boolean> {
         return this.parent.queueWork(async () => {
             if (this.isReadOnly)
@@ -100,6 +118,10 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         });
     }
 
+    /**
+     * Retrieves the persistent object associated with this reference.
+     * @returns A promise resolving to the persistent object or null.
+     */
     getPersistentObject(): Promise<PersistentObject> {
         if (!this.objectId)
             return Promise.resolve(null);
@@ -107,6 +129,9 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return this.parent.queueWork(() => this.service.getPersistentObject(this.parent, this.lookup.persistentObject.id, this.objectId));
     }
 
+    /**
+     * @inheritdoc
+     */
     protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttributeWithReference, resultWins: boolean): boolean {
         if (resultWins || this.objectId !== resultAttr.objectId) {
             this.#objectId = resultAttr.objectId;
@@ -122,6 +147,9 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return visibilityChanged;
     }
 
+    /**
+     * @inheritdoc
+     */
     protected _toServiceObject(): any {
         return super._toServiceObject({
             "objectId": this.objectId,
