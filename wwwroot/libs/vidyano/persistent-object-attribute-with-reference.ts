@@ -27,8 +27,7 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         this.displayAttribute = attr.displayAttribute;
         this.canAddNewReference = !!attr.canAddNewReference;
         this.selectInPlace = !!attr.selectInPlace;
-
-        this._setOptions(attr.options);
+        this.options = attr.options;
     }
 
     async addNewReference() {
