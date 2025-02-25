@@ -286,12 +286,40 @@ export declare type PersistentObjectAttribute = {
     tag?: any;
 };
 export declare type PersistentObjectAttributeWithReference = {
+    /**
+     * Indicates whether the end user can add a new reference on this instance.
+     */
+    canAddNewReference: boolean;
+
+    /**
+     * Gets the name of an attribute used for display on the query.
+     */
     displayAttribute: string;
+
+    /**
+     * Gets the lookup query for this instance.
+     */
     lookup: Query;
+
+    /**
+     * Gets the object id of the reference.
+     */
     objectId: string;
+
+    /**
+     * Indicates whether the end user can use a fixed list of possible references to choose from.
+     */
+    selectInPlace: boolean;
 } & PersistentObjectAttribute;
 export declare type PersistentObjectAttributeAsDetail = {
+    /**
+     * Gets the query used to lookup the related entities.
+     */
     details: Query;
+
+    /**
+     * Gets the detail persistent objects for this instance.
+     */
     objects: PersistentObject[];
 } & PersistentObjectAttribute;
 export declare type PersistentObjectTab = Partial<{

@@ -7,27 +7,62 @@ import type { Service } from "./service.js"
 import { PersistentObjectSymbols } from "./advanced.js"
 
 export class PersistentObjectAttributeWithReference extends PersistentObjectAttribute {
-    lookup: Query;
-    objectId: string;
-    displayAttribute: string;
-    canAddNewReference: boolean;
-    selectInPlace: boolean;
+    #canAddNewReference: boolean;
+    #displayAttribute: string;
+    #lookup: Query;
+    #objectId: string;
+    #selectInPlace: boolean;
 
-    constructor(service: Service, attr: any, parent: PersistentObject) {
+    constructor(service: Service, attr: Dto.PersistentObjectAttributeWithReference, parent: PersistentObject) {
         super(service, attr, parent);
 
         if (attr.lookup) {
-            this.lookup = this.service.hooks.onConstructQuery(service, attr.lookup, parent, false, 1);
-            this.lookup.ownerAttributeWithReference = this;
+            this.#lookup = this.service.hooks.onConstructQuery(service, attr.lookup, parent, false, 1);
+            this.#lookup.ownerAttributeWithReference = this;
         }
         else
-            this.lookup = null;
+            this.#lookup = null;
 
-        this.objectId = typeof attr.objectId === "undefined" ? null : attr.objectId;
-        this.displayAttribute = attr.displayAttribute;
-        this.canAddNewReference = !!attr.canAddNewReference;
-        this.selectInPlace = !!attr.selectInPlace;
+        this.#objectId = typeof attr.objectId === "undefined" ? null : attr.objectId;
+        this.#displayAttribute = attr.displayAttribute;
+        this.#canAddNewReference = !!attr.canAddNewReference;
+        this.#selectInPlace = !!attr.selectInPlace;
         this.options = attr.options;
+    }
+
+    /**
+     * Gets a value indicating whether a new reference can be added.
+     */
+    get canAddNewReference(): boolean {
+        return this.#canAddNewReference;
+    }
+
+    /**
+     * Gets the display attribute of the reference.
+     */
+    get displayAttribute(): string {
+        return this.#displayAttribute;
+    }
+
+    /**
+     * Gets the lookup query for this attribute.
+     */
+    get lookup(): Query {
+        return this.#lookup;
+    }
+
+    /**
+     * Gets the object id of the reference.
+     */
+    get objectId(): string {
+        return this.#objectId;
+    }
+
+    /**
+     * Gets a value indicating whether the reference should be selected in place.
+     */
+    get selectInPlace(): boolean {
+        return this.#selectInPlace;
     }
 
     async addNewReference() {
@@ -72,20 +107,17 @@ export class PersistentObjectAttributeWithReference extends PersistentObjectAttr
         return this.parent.queueWork(() => this.service.getPersistentObject(this.parent, this.lookup.persistentObject.id, this.objectId));
     }
 
-    protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttribute, resultWins: boolean): boolean {
-        // Cast to PersistentObjectAttributeWithReference to access more properties
-        const resultAttrWithRef = <PersistentObjectAttributeWithReference><unknown>resultAttr;
-
-        if (resultWins || this.objectId !== resultAttrWithRef.objectId) {
-            this.objectId = resultAttrWithRef.objectId;
+    protected _refreshFromResult(resultAttr: Dto.PersistentObjectAttributeWithReference, resultWins: boolean): boolean {
+        if (resultWins || this.objectId !== resultAttr.objectId) {
+            this.#objectId = resultAttr.objectId;
             this.isValueChanged = resultAttr.isValueChanged;
         }
 
         const visibilityChanged = super._refreshFromResult(resultAttr, resultWins);
 
-        this.displayAttribute = resultAttrWithRef.displayAttribute;
-        this.canAddNewReference = resultAttrWithRef.canAddNewReference;
-        this.selectInPlace = resultAttrWithRef.selectInPlace;
+        this.#displayAttribute = resultAttr.displayAttribute;
+        this.#canAddNewReference = resultAttr.canAddNewReference;
+        this.#selectInPlace = resultAttr.selectInPlace;
 
         return visibilityChanged;
     }
