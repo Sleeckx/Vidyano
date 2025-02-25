@@ -3,6 +3,9 @@ import type { PersistentObject } from "./persistent-object.js"
 import type { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Service } from "./service.js"
 
+/**
+ * Represents a group of attributes in a persistent object.
+ */
 export class PersistentObjectAttributeGroup extends Observable<PersistentObjectAttributeGroup> {
     #attributes: PersistentObjectAttribute[];
     #key: string;
@@ -11,6 +14,13 @@ export class PersistentObjectAttributeGroup extends Observable<PersistentObjectA
     #parent: PersistentObject;
     index: number;
 
+    /**
+     * Creates a new instance of PersistentObjectAttributeGroup.
+     * @param service The service instance.
+     * @param key The key for the group.
+     * @param attributes The attributes in the group.
+     * @param parent The parent persistent object.
+     */
     constructor(service: Service, key: string, attributes: PersistentObjectAttribute[], parent: PersistentObject) {
         super();
 

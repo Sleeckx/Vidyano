@@ -21,54 +21,39 @@ import "./actions.js"
 import { sleep } from "./common/sleep.js"
 import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source'
 
-/**
- * The version of this Vidyano client library.
- */
-export const version = "vidyano-latest-version";
+export let version = "vidyano-latest-version";
 
-/**
- * Notification type used to indicate the kind of notification.
- * Valid values: "" (empty), "OK", "Notice", "Warning", "Error".
- */
 export declare type NotificationType = Dto.NotificationType;
 
 export type GetQueryOptions = {
-    /** Indicates if the query is used as a lookup. (Optional) */
     asLookup?: boolean;
-    /** Specifies column overrides. (Optional) */
-    columnOverrides?: {
-        /** The name of the column override. (Required) */
+    columnOverrides?: { 
         name: string;
-        /** Array of columns to include. (Optional) */
         includes?: string[];
-        /** Array of columns to exclude. (Optional) */
         excludes?: string[];
     }[];
-    /** The parent persistent object context. (Optional) */
     parent?: PersistentObject;
-    /** A text search filter. (Optional) */
     textSearch?: string;
-    /** Sorting options for the query. (Optional) */
     sortOptions?: string;
 };
 
 export class Service extends Observable<Service> {
-    static #token: string;
-    #lastAuthTokenUpdate: Date = new Date();
-    #isUsingDefaultCredentials: boolean;
-    #clientData: Dto.ClientData;
-    #language: Language;
-    #languages: Language[];
-    #windowsAuthentication: boolean;
-    #providers: { [name: string]: Dto.ProviderParameters };
-    #isSignedIn: boolean;
-    #application: Application;
-    #userName: string;
-    #authToken: string;
-    #profile: boolean;
-    #profiledRequests: Dto.ProfilerRequest[];
-    #queuedClientOperations: IClientOperation[] = [];
-    #initial: PersistentObject;
+    private static _token: string;
+    private _lastAuthTokenUpdate: Date = new Date();
+    private _isUsingDefaultCredentials: boolean;
+    private _clientData: Dto.ClientData;
+    private _language: Language;
+    private _languages: Language[];
+    private _windowsAuthentication: boolean;
+    private _providers: { [name: string]: Dto.ProviderParameters };
+    private _isSignedIn: boolean;
+    private _application: Application;
+    private _userName: string;
+    private _authToken: string;
+    private _profile: boolean;
+    private _profiledRequests: Dto.ProfilerRequest[];
+    private _queuedClientOperations: IClientOperation[] = [];
+    private _initial: PersistentObject;
     staySignedIn: boolean;
     icons: Record<string, string>;
     actionDefinitions: Record<string, ActionDefinition> = {};
@@ -76,12 +61,6 @@ export class Service extends Observable<Service> {
     environmentVersion: string = "3";
     clearSiteData: boolean;
 
-    /**
-     * Creates a new instance of the Service.
-     * @param serviceUri The base URI of the service.
-     * @param hooks The service hooks for handling events.
-     * @param isTransient Indicates if the service should be transient.
-     */
     constructor(public serviceUri: string, public hooks: ServiceHooks = new ServiceHooks(), public readonly isTransient: boolean = false) {
         super();
 
@@ -91,34 +70,18 @@ export class Service extends Observable<Service> {
             this.staySignedIn = cookie("staySignedIn", { force: true }) === "true";
     }
 
-    /**
-     * Sets a static token for authentication.
-     */
     static set token(token: string) {
-        Service.#token = token;
+        Service._token = token;
     }
 
-    /**
-     * Constructs the full URL for a given service method.
-     * Ensures that the base URI ends with a "/" before appending the method.
-     * @param method The service method name.
-     * @returns The full URL.
-     */
-    #createUri(method: string) {
+    private _createUri(method: string) {
         let uri = this.serviceUri;
         if (!String.isNullOrEmpty(uri) && !uri.endsWith("/"))
             uri += "/";
         return uri + method;
     }
 
-    /**
-     * Prepares the request payload for the given service method.
-     * Attaches client version, environment, user credentials, session info, and language settings.
-     * @param method The service method.
-     * @param data Optional additional data.
-     * @returns The complete request data.
-     */
-    #createData(method: string, data?: any) {
+    private _createData(method: string, data?: any) {
         data = data || {};
 
         data.clientVersion = version;
@@ -146,13 +109,7 @@ export class Service extends Observable<Service> {
         return data;
     }
 
-    /**
-     * Wraps the fetch call with retry logic on HTTP 429 (Too Many Requests) responses.
-     * Retries the request based on the "Retry-After" header.
-     * @param request The Request object.
-     * @returns The Response from fetch.
-     */
-    async #fetch(request: Request): Promise<Response> {
+    private async _fetch(request: Request): Promise<Response> {
         let response: Response;
 
         do {
@@ -173,20 +130,14 @@ export class Service extends Observable<Service> {
         while (true);
     }
 
-    /**
-     * Performs a GET request and returns the parsed JSON response.
-     * @param url The URL to fetch.
-     * @param headers Optional headers for the request.
-     * @returns The parsed JSON data.
-     */
-    async #getJSON(url: string, headers?: any): Promise<any> {
+    private async _getJSON(url: string, headers?: any): Promise<any> {
         const request = new Request(url, {
             method: "GET",
             headers: headers != null ? new Headers(headers) : undefined
         });
 
         try {
-            const response = await this.#fetch(request);
+            const response = await this._fetch(request);
             if (response.ok)
                 return await response.json();
 
@@ -197,14 +148,7 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Performs a POST request with JSON data. Supports both normal and streaming posts.
-     * Handles response parsing, session expiration, and profiling.
-     * @param url The endpoint URL.
-     * @param data The data to be sent.
-     * @returns The parsed JSON result.
-     */
-    async #postJSON(url: string, data: any): Promise<any> {
+    private async _postJSON(url: string, data: any): Promise<any> {
         const createdRequest = new Date();
         let requestStart: number;
         let requestMethod: string;
@@ -236,7 +180,7 @@ export class Service extends Observable<Service> {
             body = formData;
         }
 
-        // Streaming post: if the action is flagged as streaming, use fetchEventSource to process streamed events.
+        // Streaming post
         if (typeof data.action === "string") {
             const action = data.action.split(".", 2).pop();
             const definition = this.actionDefinitions[action];
@@ -293,16 +237,16 @@ export class Service extends Observable<Service> {
                     openWhenHidden: true
                 });
 
-                // Ensure the parent is busy until the first message arrives.
+                // Make sure the parent is busy until the first message arrives
                 await awaiter;
 
                 return;
             }
         }
 
-        // Normal post: send a standard JSON POST request.
+        // Normal post
         try {
-            const response = await this.#fetch(new Request(url, {
+            const response = await this._fetch(new Request(url, {
                 method: "POST",
                 headers: headers,
                 body: body
@@ -326,9 +270,9 @@ export class Service extends Observable<Service> {
                     result.exception = result.ExceptionMessage;
 
                 if (result.exception == null) {
-                    if (createdRequest > this.#lastAuthTokenUpdate && this.authTokenType !== "JWT") {
+                    if (createdRequest > this._lastAuthTokenUpdate && this.authTokenType !== "JWT") {
                         this.authToken = result.authToken;
-                        this.#lastAuthTokenUpdate = createdRequest;
+                        this._lastAuthTokenUpdate = createdRequest;
                     }
 
                     if (this.application)
@@ -341,14 +285,14 @@ export class Service extends Observable<Service> {
 
                     if (this.defaultUserName && this.defaultUserName === this.userName) {
                         delete data.password;
-                        return await this.#postJSON(url, data);
+                        return await this._postJSON(url, data);
                     } else if (!await this.hooks.onSessionExpired())
                         throw result.exception;
                     else if (this.defaultUserName) {
                         delete data.password;
                         data.userName = this.defaultUserName;
 
-                        return await this.#postJSON(url, data);
+                        return await this._postJSON(url, data);
                     }
                     else
                         throw result.exception;
@@ -357,7 +301,7 @@ export class Service extends Observable<Service> {
                     throw result.exception;
             }
             finally {
-                this.#postJSONProcess(data, result, requestMethod, createdRequest, requestStart, result.profiler ? response.headers.get("X-ElapsedMilliseconds") : undefined);
+                this._postJSONProcess(data, result, requestMethod, createdRequest, requestStart, result.profiler ? response.headers.get("X-ElapsedMilliseconds") : undefined);
             }
         }
         catch (e) {
@@ -365,17 +309,7 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Processes profiling information and queued client operations from the server response.
-     * Notifies client operations and stores profiler data if profiling is enabled.
-     * @param data The request data.
-     * @param result The result returned by the server.
-     * @param requestMethod The invoked method name.
-     * @param createdRequest The timestamp when the request was created.
-     * @param requestStart The timestamp when the request started (for profiling).
-     * @param elapsedMs Elapsed milliseconds reported by the server.
-     */
-    #postJSONProcess(data: any, result: any, requestMethod: string, createdRequest: Date, requestStart: number, elapsedMs: string) {
+    private _postJSONProcess(data: any, result: any, requestMethod: string, createdRequest: Date, requestStart: number, elapsedMs: string) {
         if (this.profile && result.profiler) {
             const requestEnd = window.performance.now();
 
@@ -400,79 +334,60 @@ export class Service extends Observable<Service> {
             const requests = this.profiledRequests || [];
             requests.unshift(request);
 
-            this.#setProfiledRequests(requests.slice(0, 20));
+            this._setProfiledRequests(requests.slice(0, 20));
         }
 
         if (result.operations) {
-            this.#queuedClientOperations.push(...result.operations);
+            this._queuedClientOperations.push(...result.operations);
             result.operations = null;
         }
 
-        if (this.#queuedClientOperations.length > 0) {
+        if (this._queuedClientOperations.length > 0) {
             setTimeout(() => {
                 let operation: IClientOperation;
-                while (operation = this.#queuedClientOperations.splice(0, 1)[0])
+                while (operation = this._queuedClientOperations.splice(0, 1)[0])
                     this.hooks.onClientOperation(operation);
             }, 0);
         }
     }
 
-    /**
-     * Gets the queued client operations.
-     */
     get queuedClientOperations(): IClientOperation[] {
-        return this.#queuedClientOperations;
+        return this._queuedClientOperations;
     }
 
-    /**
-     * Gets the current application instance.
-     */
     get application(): Application {
-        return this.#application;
+        return this._application;
     }
 
-    /**
-     * Sets the current application instance and updates profiling settings based on its capabilities.
-     * @param application The new Application instance.
-     */
-    #setApplication(application: Application) {
-        if (this.#application === application)
+    private _setApplication(application: Application) {
+        if (this._application === application)
             return;
 
-        const oldApplication = this.#application;
-        this.notifyPropertyChanged("application", this.#application = application, oldApplication);
+        const oldApplication = this._application;
+        this.notifyPropertyChanged("application", this._application = application, oldApplication);
 
-        if (this.#application && this.#application.canProfile)
+        if (this._application && this._application.canProfile)
             this.profile = !!Boolean.parse(cookie("profile"));
         else
             this.profile = false;
     }
 
-    /**
-     * Gets the initial persistent object.
-     */
     get initial(): PersistentObject {
-        return this.#initial;
+        return this._initial;
     }
 
-    /**
-     * Gets or sets the current language.
-     */
     get language(): Language {
-        return this.#language;
+        return this._language;
     }
 
     set language(l: Language) {
-        if (this.#language === l)
+        if (this._language === l)
             return;
 
-        const oldLanguage = this.#language;
-        this.notifyPropertyChanged("language", this.#language = l, oldLanguage);
+        const oldLanguage = this._language;
+        this.notifyPropertyChanged("language", this._language = l, oldLanguage);
     }
 
-    /**
-     * Gets or sets the requested language.
-     */
     get requestedLanguage(): string {
         return cookie("requestedLanguage");
     }
@@ -484,65 +399,42 @@ export class Service extends Observable<Service> {
         cookie("requestedLanguage", val);
     }
 
-    /**
-     * Gets a value indicating whether the user is signed in.
-     */
     get isSignedIn(): boolean {
-        return this.#isSignedIn;
+        return this._isSignedIn;
     }
 
-    /**
-     * Updates the signed-in status and notifies any observers.
-     * Also updates the flag indicating whether default credentials are used.
-     * @param val The new sign-in status.
-     */
-    #setIsSignedIn(val: boolean) {
-        const oldIsSignedIn = this.#isSignedIn;
-        this.#isSignedIn = val;
+    private _setIsSignedIn(val: boolean) {
+        const oldIsSignedIn = this._isSignedIn;
+        this._isSignedIn = val;
 
-        const oldIsUsingDefaultCredentials = this.#isUsingDefaultCredentials;
-        this.#isUsingDefaultCredentials = this.defaultUserName && this.userName && this.defaultUserName.toLowerCase() === this.userName.toLowerCase();
+        const oldIsUsingDefaultCredentials = this._isUsingDefaultCredentials;
+        this._isUsingDefaultCredentials = this.defaultUserName && this.userName && this.defaultUserName.toLowerCase() === this.userName.toLowerCase();
 
-        if (oldIsSignedIn !== this.#isSignedIn)
-            this.notifyPropertyChanged("isSignedIn", this.#isSignedIn, oldIsSignedIn);
+        if (oldIsSignedIn !== this._isSignedIn)
+            this.notifyPropertyChanged("isSignedIn", this._isSignedIn, oldIsSignedIn);
 
-        if (oldIsSignedIn !== this.#isUsingDefaultCredentials)
-            this.notifyPropertyChanged("isUsingDefaultCredentials", this.#isUsingDefaultCredentials, oldIsUsingDefaultCredentials);
+        if (oldIsSignedIn !== this._isUsingDefaultCredentials)
+            this.notifyPropertyChanged("isUsingDefaultCredentials", this._isUsingDefaultCredentials, oldIsUsingDefaultCredentials);
     }
 
-    /**
-     * Gets the list of available languages.
-     */
     get languages(): Language[] {
-        return this.#languages;
+        return this._languages;
     }
 
-    /**
-     * Gets a value indicating whether Windows authentication is used.
-     */
     get windowsAuthentication(): boolean {
-        return this.#windowsAuthentication;
+        return this._windowsAuthentication;
     }
 
-    /**
-     * Gets the provider parameters.
-     */
     get providers(): { [name: string]: Dto.ProviderParameters } {
-        return this.#providers;
+        return this._providers;
     }
 
-    /**
-     * Gets a value indicating whether default credentials are used.
-     */
     get isUsingDefaultCredentials(): boolean {
-        return this.#isUsingDefaultCredentials;
+        return this._isUsingDefaultCredentials;
     }
 
-    /**
-     * Gets the current user name.
-     */
     get userName(): string {
-        return !this.isTransient ? cookie("userName") : this.#userName;
+        return !this.isTransient ? cookie("userName") : this._userName;
     }
 
     private set userName(val: string) {
@@ -553,30 +445,21 @@ export class Service extends Observable<Service> {
         if (!this.isTransient)
             cookie("userName", val, { expires: this.staySignedIn ? 365 : 30 });
         else
-            this.#userName = val;
+            this._userName = val;
 
         this.notifyPropertyChanged("userName", val, oldUserName);
     }
 
-    /**
-     * Gets the default user name.
-     */
     get defaultUserName(): string {
-        return !!this.#clientData ? this.#clientData.defaultUser || null : null;
+        return !!this._clientData ? this._clientData.defaultUser || null : null;
     }
 
-    /**
-     * Gets the user name for calling the Register persistent object.
-     */
     get registerUserName(): string {
-        return !!this.#providers && this.#providers["Vidyano"] ? this.#providers["Vidyano"].registerUser || null : null;
+        return !!this._providers && this._providers["Vidyano"] ? this._providers["Vidyano"].registerUser || null : null;
     }
 
-    /**
-     * Gets or sets the authentication token.
-     */
     get authToken(): string {
-        return !this.isTransient ? cookie("authToken") : this.#authToken;
+        return !this.isTransient ? cookie("authToken") : this._authToken;
     }
 
     set authToken(val: string) {
@@ -594,12 +477,9 @@ export class Service extends Observable<Service> {
             }
         }
         else
-            this.#authToken = val;
+            this._authToken = val;
     }
 
-    /**
-     * Gets the type of the authentication token.
-     */
     get authTokenType(): "Basic" | "JWT" | null {
         if (!this.authToken)
             return null;
@@ -607,99 +487,76 @@ export class Service extends Observable<Service> {
         return this.authToken.startsWith("JWT:") ? "JWT" : "Basic";
     }
 
-    /**
-     * Gets or sets whether profiling is enabled.
-     */
     get profile(): boolean {
-        return this.#profile;
+        return this._profile;
     }
 
     set profile(val: boolean) {
-        if (this.#profile === val)
+        if (this._profile === val)
             return;
 
         const currentProfileCookie = !!Boolean.parse(cookie("profile"));
         if (currentProfileCookie !== val)
             cookie("profile", String(val));
 
-        const oldValue = this.#profile;
-        this.#profile = val;
+        const oldValue = this._profile;
+        this._profile = val;
 
         if (!val)
-            this.#setProfiledRequests([]);
+            this._setProfiledRequests([]);
 
         this.notifyPropertyChanged("profile", val, oldValue);
     }
 
-    /**
-     * Gets the list of profiled requests.
-     */
     get profiledRequests(): Dto.ProfilerRequest[] {
-        return this.#profiledRequests;
+        return this._profiledRequests;
     }
 
-    /**
-     * Updates the stored profiler requests and notifies observers.
-     * @param requests The new list of profiler requests.
-     */
-    #setProfiledRequests(requests: Dto.ProfilerRequest[]) {
-        this.notifyPropertyChanged("profiledRequests", this.#profiledRequests = requests);
+    private _setProfiledRequests(requests: Dto.ProfilerRequest[]) {
+        this.notifyPropertyChanged("profiledRequests", this._profiledRequests = requests);
     }
 
-    /**
-     * Returns a translated message for the given key and parameters.
-     * @param key The message key.
-     * @param params The parameters to format the message.
-     */
     getTranslatedMessage(key: string, ...params: string[]): string {
         return String.format.apply(null, [this.language.messages[key] || key].concat(params));
     }
 
-    /**
-     * Retrieves the credential type for the specified user name.
-     * @param userName The user name.
-     */
     async getCredentialType(userName: string) {
-        return this.#postJSON("authenticate/GetCredentialType", { userName: userName });
+        return this._postJSON("authenticate/GetCredentialType", { userName: userName });
     }
 
-    /**
-     * Initializes the service.
-     * @param skipDefaultCredentialLogin Whether to skip default credential login.
-     */
     async initialize(skipDefaultCredentialLogin: boolean = false): Promise<Application> {
         let url = "GetClientData?v=3";
         if (this.requestedLanguage)
             url = `${url}&lang=${this.requestedLanguage}`;
 
-        this.#clientData = await this.hooks.onInitialize(await this.#getJSON(this.#createUri(url)));
+        this._clientData = await this.hooks.onInitialize(await (this._getJSON(this._createUri(url))));
 
-        if (this.#clientData.exception)
-            throw this.#clientData.exception;
+        if (this._clientData.exception)
+            throw this._clientData.exception;
 
-        const languages = Object.keys(this.#clientData.languages).map(culture => new Language(this.#clientData.languages[culture], culture));
+        const languages = Object.keys(this._clientData.languages).map(culture => new Language(this._clientData.languages[culture], culture));
         this.hooks.setDefaultTranslations(languages);
 
-        this.#languages = languages;
-        this.language = this.#languages.find(l => l.isDefault) || this.#languages[0];
+        this._languages = languages;
+        this.language = this._languages.find(l => l.isDefault) || this._languages[0];
 
-        this.#providers = {};
-        for (const provider in this.#clientData.providers) {
-            this.#providers[provider] = this.#clientData.providers[provider].parameters;
+        this._providers = {};
+        for (const provider in this._clientData.providers) {
+            this._providers[provider] = this._clientData.providers[provider].parameters;
         }
-        this.#windowsAuthentication = this.#clientData.windowsAuthentication;
+        this._windowsAuthentication = this._clientData.windowsAuthentication;
 
-        if (Service.#token) {
-            if (!Service.#token.startsWith("JWT:")) {
-                const tokenParts = Service.#token.split("/", 2);
+        if (Service._token) {
+            if (!Service._token.startsWith("JWT:")) {
+                const tokenParts = Service._token.split("/", 2);
 
                 this.userName = atob(tokenParts[0]);
                 this.authToken = tokenParts[1].replace("_", "/");
             }
             else
-                this.authToken = Service.#token;
+                this.authToken = Service._token;
 
-            Service.#token = undefined;
+            Service._token = undefined;
 
             const returnUrl = cookie("returnUrl", { force: true }) || "";
             if (returnUrl)
@@ -707,30 +564,26 @@ export class Service extends Observable<Service> {
 
             this.hooks.onNavigate(returnUrl, true);
 
-            return this.#getApplication();
+            return this._getApplication();
         }
 
-        this.userName = this.userName || this.#clientData.defaultUser;
+        this.userName = this.userName || this._clientData.defaultUser;
 
         let application: Application;
-        if (!String.isNullOrEmpty(this.authToken) || ((this.#clientData.defaultUser || this.windowsAuthentication) && !skipDefaultCredentialLogin)) {
+        if (!String.isNullOrEmpty(this.authToken) || ((this._clientData.defaultUser || this.windowsAuthentication) && !skipDefaultCredentialLogin)) {
             try {
-                application = await this.#getApplication();
+                application = await this._getApplication();
             }
             catch (e) {
                 application = null;
             }
         }
         else
-            this.#setIsSignedIn(!!this.application);
+            this._setIsSignedIn(!!this.application);
 
         return application;
     }
 
-    /**
-     * Initiates sign-in using an external provider.
-     * @param providerName The provider name.
-     */
     signInExternal(providerName: string) {
         if (!this.providers[providerName] || !this.providers[providerName].requestUri)
             throw "Provider not found or not flagged for external authentication.";
@@ -738,26 +591,12 @@ export class Service extends Observable<Service> {
         document.location.href = this.providers[providerName].requestUri;
     }
 
-    /**
-     * Signs in using user credentials.
-     * @param userName The user name.
-     * @param password The password.
-     * @param staySignedIn Whether to stay signed in.
-     */
     async signInUsingCredentials(userName: string, password: string, staySignedIn?: boolean): Promise<Application>;
-
-    /**
-     * Signs in using user credentials with a verification code.
-     * @param userName The user name.
-     * @param password The password.
-     * @param code The verification code.
-     * @param staySignedIn Whether to stay signed in.
-     */
     async signInUsingCredentials(userName: string, password: string, code?: string, staySignedIn?: boolean): Promise<Application>;
     async signInUsingCredentials(userName: string, password: string, codeOrStaySignedIn?: string | boolean, staySignedIn?: boolean): Promise<Application> {
         this.userName = userName;
 
-        const data = this.#createData("getApplication");
+        const data = this._createData("getApplication");
         data.userName = userName;
         data.password = password;
 
@@ -765,7 +604,7 @@ export class Service extends Observable<Service> {
             data.code = codeOrStaySignedIn;
 
         try {
-            const application = await this.#getApplication(data);
+            const application = await this._getApplication(data);
             if (application && this.isSignedIn && !this.isTransient) {
                 const ssi = (typeof codeOrStaySignedIn === "boolean" && codeOrStaySignedIn) || (typeof staySignedIn === "boolean" && staySignedIn);
                 cookie("staySignedIn", (this.staySignedIn = ssi) ? "true" : null, { force: true, expires: 365 });
@@ -778,19 +617,12 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Signs in using default credentials.
-     */
     signInUsingDefaultCredentials(): Promise<Application> {
         this.userName = this.defaultUserName;
 
-        return this.#getApplication();
+        return this._getApplication();
     }
 
-    /**
-     * Signs the user out.
-     * @param skipAcs Whether to skip ACS sign-out.
-     */
     signOut(skipAcs?: boolean): Promise<boolean> {
         if (this.clearSiteData && !!this.authToken)
             this.executeAction("PersistentObject.viSignOut", this.application, null, null, null, true);
@@ -799,23 +631,23 @@ export class Service extends Observable<Service> {
             this.userName = null;
 
         this.authToken = null;
-        this.#setApplication(null);
+        this._setApplication(null);
 
-        if (!skipAcs && this.#providers["Acs"] && this.#providers["Acs"].signOutUri) {
+        if (!skipAcs && this._providers["Acs"] && this._providers["Acs"].signOutUri) {
             return new Promise(resolve => {
                 const iframe = document.createElement("iframe");
                 iframe.setAttribute("hidden", "");
                 iframe.width = "0";
                 iframe.height = "0";
-                iframe.src = this.#providers["Acs"].signOutUri;
+                iframe.src = this._providers["Acs"].signOutUri;
                 iframe.onload = () => {
                     document.body.removeChild(iframe);
-                    this.#setIsSignedIn(false);
+                    this._setIsSignedIn(false);
 
                     resolve(true);
                 };
                 iframe.onerror = () => {
-                    this.#setIsSignedIn(false);
+                    this._setIsSignedIn(false);
                     resolve(true);
                 };
 
@@ -824,17 +656,11 @@ export class Service extends Observable<Service> {
         }
 
         this.clearSiteData = false;
-        this.#setIsSignedIn(false);
+        this._setIsSignedIn(false);
         return Promise.resolve(true);
     }
 
-    /**
-     * Retrieves the application data from the server.
-     * Handles session management and language updates.
-     * @param data Optional data for the request.
-     * @returns The Application instance.
-     */
-    async #getApplication(data: any = this.#createData("")): Promise<Application> {
+    private async _getApplication(data: any = this._createData("")): Promise<Application> {
         if (!(data.authToken || data.accessToken || data.password) && this.userName && this.userName !== this.defaultUserName && this.userName !== this.registerUserName) {
             if (this.defaultUserName)
                 this.userName = this.defaultUserName;
@@ -845,7 +671,7 @@ export class Service extends Observable<Service> {
             data.userName = this.userName;
         }
 
-        const result = await this.#postJSON(this.#createUri("GetApplication"), data);
+        const result = await this._postJSON(this._createUri("GetApplication"), data);
 
         if (!String.isNullOrEmpty(result.exception))
             throw result.exception;
@@ -853,14 +679,14 @@ export class Service extends Observable<Service> {
         if (result.application == null)
             throw "Unknown error";
 
-        this.#setApplication(this.hooks.onConstructApplication(result));
+        this._setApplication(this.hooks.onConstructApplication(result));
 
         const resourcesQuery = this.application.getQuery("Resources");
         this.icons = resourcesQuery ? Object.assign({}, ...resourcesQuery.items.filter(i => i.getValue("Type") === "Icon").map(i => ({ [i.getValue("Key")]: i.getValue("Data") }))) : {};
 
         Object.assign(this.actionDefinitions, ...this.application.getQuery("Actions").items.map(i => ({ [i.getValue("Name")]: new ActionDefinition(this, i) })));
 
-        this.language = this.#languages.find(l => l.culture === result.userLanguage) || this.#languages.find(l => l.isDefault);
+        this.language = this._languages.find(l => l.culture === result.userLanguage) || this._languages.find(l => l.isDefault);
 
         const clientMessagesQuery = this.application.getQuery("ClientMessages");
         if (clientMessagesQuery) {
@@ -875,7 +701,7 @@ export class Service extends Observable<Service> {
         CultureInfo.currentCulture = CultureInfo.cultures[result.userCultureInfo] || CultureInfo.cultures[result.userLanguage] || CultureInfo.invariantCulture;
 
         if (result.initial != null)
-            this.#initial = this.hooks.onConstructPersistentObject(this, result.initial);
+            this._initial = this.hooks.onConstructPersistentObject(this, result.initial);
 
         if (result.userName !== this.registerUserName || result.userName === this.defaultUserName) {
             this.userName = result.userName;
@@ -883,32 +709,18 @@ export class Service extends Observable<Service> {
             if (result.session)
                 this.application._updateSession(result.session);
 
-            this.#setIsSignedIn(true);
+            this._setIsSignedIn(true);
         }
         else
-            this.#setIsSignedIn(false);
+            this._setIsSignedIn(false);
 
         return this.application;
     }
 
-    /**
-     * Retrieves a query.
-     * @param id The query identifier.
-     * @param options Query options.
-     */
     async getQuery(id: string, options?: GetQueryOptions): Promise<Query>;
-
-    /**
-     * Retrieves a query with lookup options.
-     * @param id The query identifier.
-     * @param asLookup Whether it's a lookup query.
-     * @param parent The parent persistent object.
-     * @param textSearch Text search criteria.
-     * @param sortOptions Sorting options.
-     */
     async getQuery(id: string, asLookup?: boolean, parent?: PersistentObject, textSearch?: string, sortOptions?: string): Promise<Query>;
     async getQuery(id: string, arg2?: boolean | GetQueryOptions, parent?: PersistentObject, textSearch?: string, sortOptions?: string): Promise<Query> {
-        const data = this.#createData("getQuery");
+        const data = this._createData("getQuery");
         data.id = id;
 
         const options = typeof arg2 === "object" ? arg2 : {
@@ -930,22 +742,15 @@ export class Service extends Observable<Service> {
         if (!!options.columnOverrides)
             data.columnOverrides = options.columnOverrides;
 
-        const result = await this.#postJSON(this.#createUri("GetQuery"), data);
+        const result = await this._postJSON(this._createUri("GetQuery"), data);
         if (result.exception)
             throw result.exception;
 
         return this.hooks.onConstructQuery(this, result.query, null, options.asLookup);
     }
 
-    /**
-     * Retrieves a persistent object.
-     * @param parent The parent persistent object.
-     * @param id The persistent object type identifier.
-     * @param objectId The object identifier.
-     * @param isNew Whether the object is new.
-     */
     async getPersistentObject(parent: PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject> {
-        const data = this.#createData("getPersistentObject");
+        const data = this._createData("getPersistentObject");
         data.persistentObjectTypeId = id;
         data.objectId = objectId;
         if (isNew)
@@ -953,7 +758,7 @@ export class Service extends Observable<Service> {
         if (parent != null)
             data.parent = parent.toServiceObject();
 
-        const result = await this.#postJSON(this.#createUri("GetPersistentObject"), data);
+        const result = await this._postJSON(this._createUri("GetPersistentObject"), data);
         if (result.exception)
             throw result.exception;
         else if (result.result && result.result.notification) {
@@ -969,15 +774,8 @@ export class Service extends Observable<Service> {
         return this.hooks.onConstructPersistentObject(this, result.result);
     }
 
-    /**
-     * Executes a query.
-     * @param parent The parent persistent object.
-     * @param query The query to execute.
-     * @param asLookup Whether it's a lookup query.
-     * @param throwExceptions Whether to throw exceptions.
-     */
     async executeQuery(parent: PersistentObject, query: Query, asLookup: boolean = false, throwExceptions?: boolean): Promise<Dto.QueryResult> {
-        const data = this.#createData("executeQuery");
+        const data = this._createData("executeQuery");
         data.query = query._toServiceObject();
 
         if (parent != null)
@@ -988,7 +786,7 @@ export class Service extends Observable<Service> {
             data.forReferenceAttribute = query.ownerAttributeWithReference.name;
 
         try {
-            const result = await this.#postJSON(this.#createUri("ExecuteQuery"), data);
+            const result = await this._postJSON(this._createUri("ExecuteQuery"), data);
             if (result.exception)
                 throw result.exception;
 
@@ -1000,7 +798,7 @@ export class Service extends Observable<Service> {
                     data.query.continuation = queryResult.continuation;
                     data.query.top = wanted - queryResult.items.length;
 
-                    const innerResult = await this.#postJSON(this.#createUri("ExecuteQuery"), data);
+                    const innerResult = await this._postJSON(this._createUri("ExecuteQuery"), data);
                     if (innerResult.exception)
                         throw innerResult.exception;
 
@@ -1023,15 +821,6 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Executes an action.
-     * @param action The action name.
-     * @param parent The parent persistent object.
-     * @param query The query context.
-     * @param selectedItems The selected query result items.
-     * @param parameters Additional parameters.
-     * @param skipHooks Whether to skip hooks.
-     */
     async executeAction(action: string, parent: PersistentObject, query: Query, selectedItems: Array<QueryResultItem>, parameters?: any, skipHooks: boolean = false): Promise<PersistentObject> {
         const isObjectAction = action.startsWith("PersistentObject.") || query == null;
         const targetServiceObject = isObjectAction ? parent : query;
@@ -1060,7 +849,7 @@ export class Service extends Observable<Service> {
         }
 
         const isFreezingAction = isObjectAction && action !== "PersistentObject.Refresh";
-        const data = this.#createData("executeAction");
+        const data = this._createData("executeAction");
         data.action = action;
         if (parent != null)
             data.parent = parent.toServiceObject();
@@ -1076,7 +865,7 @@ export class Service extends Observable<Service> {
                 return;
 
             if (result.operations) {
-                this.#queuedClientOperations.push(...result.operations);
+                this._queuedClientOperations.push(...result.operations);
                 result.operations = null;
             }
 
@@ -1092,7 +881,7 @@ export class Service extends Observable<Service> {
             if (result.retry.persistentObject instanceof PersistentObject)
                 data.retryPersistentObject = result.retry.persistentObject.toServiceObject();
 
-            const retryResult = await this.#postJSON(this.#createUri("ExecuteAction"), data);
+            const retryResult = await this._postJSON(this._createUri("ExecuteAction"), data);
             return await executeThen(retryResult);
         };
 
@@ -1124,7 +913,7 @@ export class Service extends Observable<Service> {
                 data.__form_data = formData;
             }
 
-            const result = await this.#postJSON(this.#createUri("ExecuteAction"), data);
+            const result = await this._postJSON(this._createUri("ExecuteAction"), data);
             return await executeThen(result);
         }
         catch (e) {
@@ -1138,17 +927,8 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Retrieves a data stream.
-     * @param obj The persistent object.
-     * @param action The action name.
-     * @param parent The parent persistent object.
-     * @param query The query context.
-     * @param selectedItems The selected query result items.
-     * @param parameters Additional parameters.
-     */
     async getStream(obj: PersistentObject, action?: string, parent?: PersistentObject, query?: Query, selectedItems?: Array<QueryResultItem>, parameters?: any) {
-        const data = this.#createData("getStream");
+        const data = this._createData("getStream");
         data.action = action;
         if (obj != null)
             data.id = obj.objectId;
@@ -1164,7 +944,7 @@ export class Service extends Observable<Service> {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));
 
-        const response = await this.#fetch(new Request(this.#createUri("GetStream"), {
+        const response = await this._fetch(new Request(this._createUri("GetStream"), {
             body: formData,
             method: "POST"
         }));
@@ -1188,13 +968,8 @@ export class Service extends Observable<Service> {
         }
     }
 
-    /**
-     * Retrieves a report.
-     * @param token The report token.
-     * @param options Report options.
-     */
     async getReport(token: string, { filter = "", orderBy, top, skip, hideIds, hideType = true }: IReportOptions = {}): Promise<any[]> {
-        let uri = this.#createUri(`GetReport/${token}?format=json&$filter=${encodeURIComponent(filter)}`);
+        let uri = this._createUri(`GetReport/${token}?format=json&$filter=${encodeURIComponent(filter)}`);
 
         if (orderBy)
             uri = `${uri}&$orderBy=${orderBy}`;
@@ -1207,15 +982,11 @@ export class Service extends Observable<Service> {
         if (hideType)
             uri = `${uri}&hideType=true`;
 
-        return (await this.#getJSON(uri)).d;
+        return (await this._getJSON(uri)).d;
     }
 
-    /**
-     * Performs an instant search.
-     * @param search The search text.
-     */
     async getInstantSearch(search: string): Promise<IInstantSearchResult[]> {
-        const uri = this.#createUri(`Instant?q=${encodeURIComponent(search)}`);
+        const uri = this._createUri(`Instant?q=${encodeURIComponent(search)}`);
 
         let authorization: string;
         if (this.authTokenType !== "JWT") {
@@ -1227,71 +998,42 @@ export class Service extends Observable<Service> {
         else
             authorization = this.authToken.substr(4);
 
-        return (await this.#getJSON(uri, {
+        return (await this._getJSON(uri, {
             "Authorization": `Bearer ${authorization}`
         })).d;
     }
 
-    /**
-     * Initiates the forgot password process.
-     * @param userName The user name.
-     */
     forgotPassword(userName: string): Promise<IForgotPassword> {
-        return this.#postJSON(this.#createUri("forgotpassword"), { userName: userName });
+        return this._postJSON(this._createUri("forgotpassword"), { userName: userName });
     }
 
-    /**
-     * Converts a service string representation to its corresponding data type.
-     * @param value The service string.
-     * @param typeName The target type name.
-     * @returns The converted value.
-     */
     static fromServiceString(value: string, typeName: string): any {
         return DataType.fromServiceString(value, typeName);
     }
 
-    /**
-     * Converts a value to its service string representation based on the type.
-     * @param value The value to convert.
-     * @param typeName The type name.
-     * @returns The service string.
-     */
     static toServiceString(value: any, typeName: string): string {
         return DataType.toServiceString(value, typeName);
     }
 }
 
-export type IForgotPassword = {
-    /** The message to be displayed to the user */
+export interface IForgotPassword {
     notification: string;
-    /** The type of notification (e.g., "", "OK", "Notice", "Warning", "Error") */
     notificationType: NotificationType;
-    /** The duration in milliseconds for which the notification should be shown */
     notificationDuration: number;
-};
+}
 
-export type IReportOptions = {
-    /** Optional filter string to limit report data */
+export interface IReportOptions {
     filter?: string;
-    /** Optional clause to specify the sort order of the report data */
     orderBy?: string;
-    /** Optional limit on the number of items to retrieve */
     top?: number;
-    /** Optional number of items to skip in the report */
     skip?: number;
-    /** Optional flag to hide ID fields in the report */
     hideIds?: boolean;
-    /** Optional flag to hide type information in the report */
     hideType?: boolean;
-};
+}
 
-export type IInstantSearchResult = {
-    /** The unique identifier for the search result */
+export interface IInstantSearchResult {
     id: string;
-    /** The display label for the search result */
     label: string;
-    /** The associated object identifier */
     objectId: string;
-    /** A breadcrumb path representing the hierarchical location of the search result */
     breadcrumb: string;
-};
+}

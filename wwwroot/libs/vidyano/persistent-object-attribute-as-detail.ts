@@ -1,6 +1,6 @@
+import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type * as Dto from "./typings/service.js"
 import type { PersistentObject } from "./persistent-object.js"
-import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import type { Query } from "./query.js"
 import type { Service } from "./service.js"
 
