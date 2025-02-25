@@ -38,6 +38,7 @@ export class PersistentObjectAttribute extends ServiceObject {
     readonly #name: string;
     #offset: number;
     #options: string[] | PersistentObjectAttributeOption[];
+    #parent!: PersistentObject;
     #refreshServiceValue: string;
     #rules: string;
     #serviceOptions: string[];
@@ -45,15 +46,14 @@ export class PersistentObjectAttribute extends ServiceObject {
     #tag: any;
     #tab: PersistentObjectAttributeTab;
     #tabKey: string;
+    readonly #toolTip: string;
+    #triggersRefresh: boolean;
     readonly #type: string;
+    #typeHints: Record<string, string>;
     #validationError: string;
     #visibility: Dto.PersistentObjectAttributeVisibility;
 
     protected _shouldRefresh: boolean = false;
-
-    readonly toolTip: string;
-    triggersRefresh: boolean;
-    typeHints: any;
 
     /**
      * Creates a new persistent attribute.
@@ -62,7 +62,7 @@ export class PersistentObjectAttribute extends ServiceObject {
      * @param attr The attribute data.
      * @param parent The parent persistent object.
      */
-    constructor(service: Service, attr: Dto.PersistentObjectAttribute, public parent: PersistentObject) {
+    constructor(service: Service, attr: Dto.PersistentObjectAttribute, parent: PersistentObject) {
         super(service);
 
         this[PersistentObjectAttributeSymbols.BackupServiceValue] = this.#backupServiceValue.bind(this);
@@ -71,6 +71,7 @@ export class PersistentObjectAttribute extends ServiceObject {
         this[PersistentObjectAttributeSymbols.ToServiceObject] = this._toServiceObject.bind(this);
 
         this.#id = attr.id;
+        this.#parent = parent;
         this.#isSystem = !!attr.isSystem;
         this.#name = attr.name;
         this.#type = attr.type;
@@ -83,11 +84,11 @@ export class PersistentObjectAttribute extends ServiceObject {
         this.#isValueChanged = !!attr.isValueChanged;
         this.#isSensitive = !!attr.isSensitive;
         this.#offset = attr.offset || 0;
-        this.toolTip = attr.toolTip;
+        this.#toolTip = attr.toolTip;
         this.#rules = attr.rules;
         this.validationError = attr.validationError || null;
-        this.typeHints = attr.typeHints || {};
-        this.triggersRefresh = !!attr.triggersRefresh;
+        this.#typeHints = attr.typeHints || {};
+        this.#triggersRefresh = !!attr.triggersRefresh;
         this.#column = attr.column;
         this.#columnSpan = attr.columnSpan || 0;
         this.visibility = attr.visibility;
@@ -182,6 +183,13 @@ export class PersistentObjectAttribute extends ServiceObject {
      */
     get offset() {
         return this.#offset;
+    }
+
+    /**
+     * Gets the parent persistent object.
+     */
+    get parent(): PersistentObject {
+        return this.#parent;
     }
 
     /**
@@ -388,6 +396,25 @@ export class PersistentObjectAttribute extends ServiceObject {
     }
 
     /**
+     * Gets the tool tip.
+     */
+    get toolTip(): string {
+        return this.#toolTip;
+    }
+
+    /**
+     * Gets the flag indicating if changing the attribute's value triggers a refresh.
+     */
+    get triggersRefresh(): boolean {
+        return this.#triggersRefresh;
+    }
+    #setTriggersRefresh(triggersRefresh: boolean) {
+        const oldTriggersRefresh = this.#triggersRefresh;
+        if (oldTriggersRefresh !== triggersRefresh)
+            this.notifyPropertyChanged("triggersRefresh", this.#triggersRefresh = triggersRefresh, oldTriggersRefresh);
+    }
+
+    /**
      * Gets or sets the value.
      */
     get value(): any {
@@ -503,6 +530,13 @@ export class PersistentObjectAttribute extends ServiceObject {
      */
     get tag(): any {
         return this.#tag;
+    }
+
+    /**
+     * Gets the data type hints
+     */
+    get typeHints(): Record<string, string> {
+        return this.#typeHints;
     }
 
     /**
@@ -624,7 +658,7 @@ export class PersistentObjectAttribute extends ServiceObject {
         this.#tag = resultAttr.tag;
         this.#refreshServiceValue = undefined;
 
-        this.triggersRefresh = resultAttr.triggersRefresh;
+        this.#setTriggersRefresh(resultAttr.triggersRefresh);
         this.validationError = resultAttr.validationError || null;
 
         if (resultAttr.typeHints && Object.keys(resultAttr.typeHints).some(k => resultAttr.typeHints[k] !== this.typeHints[k])) {
@@ -636,7 +670,7 @@ export class PersistentObjectAttribute extends ServiceObject {
             }
 
             const oldTypeHints = this.typeHints;
-            this.notifyPropertyChanged("typeHints", this.typeHints = resultAttr.typeHints, oldTypeHints);
+            this.notifyPropertyChanged("typeHints", this.#typeHints = resultAttr.typeHints, oldTypeHints);
         }
 
         return visibilityChanged;

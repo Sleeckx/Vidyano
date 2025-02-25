@@ -530,7 +530,6 @@ export class PersistentObject extends ServiceObjectWithActions {
         this.attributes.removeAll(attr => {
             if (!result.attributes.some(serviceAttr => serviceAttr.id === attr.id)) {
                 delete this.attributes[attr.name];
-                attr.parent = null;
                 changedAttributes.push(attr);
 
                 return true;
@@ -552,8 +551,6 @@ export class PersistentObject extends ServiceObjectWithActions {
             if (!this.attributes.some(a => a.id === serviceAttr.id)) {
                 const attr = this.#createPersistentObjectAttribute(serviceAttr);
                 this.attributes.push(attr);
-                attr.parent = this;
-
                 changedAttributes.push(attr);
 
                 if (attr.isValueChanged)

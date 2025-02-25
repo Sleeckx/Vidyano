@@ -225,7 +225,7 @@ export class QueryColumn extends ServiceObject {
             matching: <string[]>matchingDistinctsAttr.options,
             remaining: <string[]>remainingDistinctsAttr.options,
             isDirty: false,
-            hasMore: matchingDistinctsAttr.typeHints.hasmore || remainingDistinctsAttr.typeHints.hasmore
+            hasMore: Boolean.parse(matchingDistinctsAttr.typeHints.hasmore || remainingDistinctsAttr.typeHints.hasmore)
         };
 
         return this.distincts;

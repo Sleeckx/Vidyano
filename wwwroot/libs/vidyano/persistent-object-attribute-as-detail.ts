@@ -9,7 +9,7 @@ export class PersistentObjectAttributeAsDetail extends PersistentObjectAttribute
     details: Query;
     lookupAttribute: string;
 
-    constructor(service: Service, attr: any, public parent: PersistentObject) {
+    constructor(service: Service, attr: any, parent: PersistentObject) {
         super(service, attr, parent);
 
         if (attr.details)
