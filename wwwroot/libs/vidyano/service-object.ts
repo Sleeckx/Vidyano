@@ -1,6 +1,11 @@
 import { Observable } from "./common/observable.js"
 import type { Service } from "./service.js"
 
+export function nameof<TObject>(key: keyof TObject): string;
+export function nameof(key: any): any {
+    return key;
+}
+
 /**
  * Represents a base class for objects that are used by the backend service.
  * This class provides common functionality for service objects, such as

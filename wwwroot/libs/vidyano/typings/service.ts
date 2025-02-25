@@ -131,7 +131,8 @@ export declare type PersistentObject = Partial<{
     dialogSaveAction: string;
 
     /**
-     * TODO: Document this property.
+     * Indicates whether the url for this persistent object should be a FromAction so that refreshing the page will not be able to see different data.
+     * @example When the persistent object has a parent persistent object that is required. But not loaded during direct navigation;
      */
     forceFromAction?: boolean;
 
@@ -144,11 +145,6 @@ export declare type PersistentObject = Partial<{
      * Gets the id of the persistent object.
      */
     id: string;
-
-    /**
-     * Determines if the client should ignore checking rules on the client sides
-     */
-    ignoreCheckRules: boolean;
 
     /**
      * Indicates whether the breadcrumb data should be treated as sensitive.
@@ -184,6 +180,11 @@ export declare type PersistentObject = Partial<{
      * Gets the label of the persistent object.
      */
     label: string;
+
+    /**
+     * Gets the metadata of the persistent object.
+     */
+    metadata: Record<string, string>;
 
     /*
      * A semicolon separated list of translated options for the end user to pick when executing the New action.

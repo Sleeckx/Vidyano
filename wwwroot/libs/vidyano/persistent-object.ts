@@ -1,11 +1,11 @@
 import type * as Dto from "./typings/service.js"
+import type { Action } from "./action.js"
+import type { Query } from "./query.js"
+import type { Service } from "./service.js"
+import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 import { ServiceObjectWithActions } from "./service-object-with-actions.js"
 import { PersistentObjectAttribute } from "./persistent-object-attribute.js"
 import { PersistentObjectTab, PersistentObjectAttributeTab, PersistentObjectQueryTab } from "./persistent-object-tab.js"
-import type { Query } from "./query.js"
-import type { Service } from "./service.js"
-import { PersistentObjectAttributeWithReference } from "./persistent-object-attribute-with-reference.js"
-import type { PersistentObjectAttributeGroup } from "./persistent-object-attribute-group.js"
 import { PersistentObjectSymbols, PersistentObjectAttributeSymbols } from "./advanced.js"
 
 /**
@@ -21,33 +21,32 @@ export enum PersistentObjectLayoutMode {
  * saving, refreshing data, and managing attributes and tabs.
  */
 export class PersistentObject extends ServiceObjectWithActions {
-    readonly #isSystem;
-    #lastResult;
-    #lastUpdated;
-    #lastResultBackup;
-    #securityToken;
-    #isEditing = false;
-    #isDirty = false;
-    readonly #id;
-    readonly #type;
-    #breadcrumb;
-    #isDeleted;
-    #tabs;
-    #isFrozen = false;
-    #tag;
-    readonly isBreadcrumbSensitive;
-    readonly forceFromAction;
-    readonly fullTypeName;
-    readonly label;
-    objectId;
-    readonly isHidden;
+    readonly #isSystem: boolean;
+    #lastResult: Dto.PersistentObject;
+    #lastUpdated: Date;
+    #lastResultBackup: Dto.PersistentObject;
+    #securityToken: string;
+    #isEditing: boolean = false;
+    #isDirty: boolean = false;
+    readonly #id: string;
+    readonly #type: string;
+    #breadcrumb: string;
+    #isDeleted: boolean;
+    #tabs: PersistentObjectTab[];
+    #isFrozen: boolean = false;
+    #tag: any;
+    readonly #isBreadcrumbSensitive: boolean;
+    readonly #forceFromAction: boolean;
+    readonly #fullTypeName: string;
+    readonly #label: string;
+    #objectId: string;
+    readonly #isHidden: boolean;
     isNew;
-    readonly isReadOnly;
-    readonly queryLayoutMode;
-    readonly newOptions;
-    readonly ignoreCheckRules;
-    stateBehavior;
-    readonly dialogSaveAction;
+    readonly #isReadOnly: boolean;
+    readonly #queryLayoutMode;
+    readonly #newOptions;
+    #stateBehavior;
+    readonly #dialogSaveAction: Action;
     parent;
     ownerDetailAttribute;
     ownerAttributeWithReference;
@@ -75,21 +74,20 @@ export class PersistentObject extends ServiceObjectWithActions {
         this.#id = po.id;
         this.#isSystem = !!po.isSystem;
         this.#type = po.type;
-        this.label = po.label;
-        this.forceFromAction = po.forceFromAction;
-        this.fullTypeName = po.fullTypeName;
-        this.queryLayoutMode = po.queryLayoutMode === "FullPage" ? PersistentObjectLayoutMode.FullPage : PersistentObjectLayoutMode.MasterDetail;
-        this.objectId = po.objectId;
+        this.#label = po.label;
+        this.#forceFromAction = po.forceFromAction;
+        this.#fullTypeName = po.fullTypeName;
+        this.#queryLayoutMode = po.queryLayoutMode === "FullPage" ? PersistentObjectLayoutMode.FullPage : PersistentObjectLayoutMode.MasterDetail;
+        this.#objectId = po.objectId;
         this.#breadcrumb = po.breadcrumb;
-        this.isBreadcrumbSensitive = po.isBreadcrumbSensitive;
+        this.#isBreadcrumbSensitive = po.isBreadcrumbSensitive;
         this.setNotification(po.notification, po.notificationType, po.notificationDuration, true);
         this.isNew = !!po.isNew;
-        this.newOptions = po.newOptions;
-        this.isReadOnly = !!po.isReadOnly;
-        this.isHidden = !!po.isHidden;
+        this.#newOptions = po.newOptions;
+        this.#isReadOnly = !!po.isReadOnly;
+        this.#isHidden = !!po.isHidden;
         this.#isDeleted = !!po.isDeleted;
-        this.ignoreCheckRules = !!po.ignoreCheckRules;
-        this.stateBehavior = po.stateBehavior || "None";
+        this.#stateBehavior = po.stateBehavior || "None";
         this.#setIsEditing(false);
         this.#securityToken = po.securityToken;
         this.bulkObjectIds = po.bulkObjectIds;
@@ -172,7 +170,7 @@ export class PersistentObject extends ServiceObjectWithActions {
             this.beginEdit();
 
         this._initializeActions();
-        this.dialogSaveAction = po.dialogSaveAction
+        this.#dialogSaveAction = po.dialogSaveAction
             ? this.getAction(po.dialogSaveAction)
             : this.getAction("EndEdit") || this.getAction("Save");
 
@@ -224,6 +222,39 @@ export class PersistentObject extends ServiceObjectWithActions {
     }
 
     /**
+     * Gets whether the breadcrumb data should be treated as sensitive.
+     */
+    get isBreadcrumbSensitive(): boolean {
+        return this.#isBreadcrumbSensitive;
+    }
+
+    /**
+     * Gets the translated label of the persistent object.
+     */
+    get label(): string {
+        return this.#label;
+    }
+
+    /**
+     * Gets the unique identifier of the object that is being represented by this persistent object.
+     */
+    get objectId(): string {
+        return this.#objectId;
+    }
+
+    /**
+     * Gets or sets a set of extra options that influence the state of the persistent object.
+     */
+    get stateBehavior(): string {
+        return this.#stateBehavior;
+    }
+    set stateBehavior(value: string) {
+        const oldValue = this.#stateBehavior;
+        if (oldValue !== value)
+            this.notifyPropertyChanged("stateBehavior", (this.#stateBehavior = value), oldValue);
+    }
+
+    /**
      * Lists the tabs associated with the persistent object.
      */
     get tabs(): PersistentObjectTab[] {
@@ -233,6 +264,20 @@ export class PersistentObject extends ServiceObjectWithActions {
     set tabs(tabs: PersistentObjectTab[]) {
         const oldTabs = this.#tabs;
         this.notifyPropertyChanged("tabs", (this.#tabs = tabs), oldTabs);
+    }
+
+    /**
+     * Gets the action that should be executed when the dialog is saved.
+     */
+    get dialogSaveAction() {
+        return this.#dialogSaveAction;
+    }
+
+    /**
+     * Gets the way in which this persistent object is rendered together with its detail queries.
+     */
+    get queryLayoutMode(): PersistentObjectLayoutMode {
+        return this.#queryLayoutMode;
     }
 
     /**
@@ -247,6 +292,13 @@ export class PersistentObject extends ServiceObjectWithActions {
      */
     get isEditing(): boolean {
         return this.#isEditing;
+    }
+
+    /**
+     * Gets whether the attributes of this persistent object can be changed.
+     */
+    get isReadOnly(): boolean {
+        return this.#isReadOnly;
     }
 
     /**
@@ -277,6 +329,14 @@ export class PersistentObject extends ServiceObjectWithActions {
     }
 
     /**
+     * Gets whether the url for this persistent object should be a FromAction so that refreshing the page will not be able to see different data.
+     * @example When the persistent object has a parent persistent object that is required. But not loaded during direct navigation;
+     */
+    get forceFromAction(): boolean {
+        return this.#forceFromAction;
+    }
+
+    /**
      * Indicates if there are unsaved modifications.
      */
     get isDirty(): boolean {
@@ -303,7 +363,8 @@ export class PersistentObject extends ServiceObjectWithActions {
     }
 
     /**
-     * Indicates whether the object is marked as deleted.
+     * Gets or sets whether this persistent object has been marked as deleted.
+     * This is used when the persistent object is part of the list of objects of an as detail attribute.
      */
     get isDeleted(): boolean {
         return this.#isDeleted;
@@ -316,10 +377,32 @@ export class PersistentObject extends ServiceObjectWithActions {
     }
 
     /**
+     * Gets whether all of the persistent object attribute tabs will be hidden and only detail queries should be shown.
+     */
+    get isHidden(): boolean {
+        return this.#isHidden;
+    }
+
+    /**
      * Shows if the object is in a frozen state.
      */
     get isFrozen(): boolean {
         return this.#isFrozen;
+    }
+
+    /**
+     * Full type name of the persistent object.
+     * @example "MyProject.MyPersistentObject"
+     */
+    get fullTypeName(): string {
+        return this.#fullTypeName;
+    }
+
+    /**
+     * A semicolon separated list of translated options for the end user to pick when executing the New action.
+     */
+    get newOptions(): string {
+        return this.#newOptions;
     }
 
     /**
@@ -564,7 +647,7 @@ export class PersistentObject extends ServiceObjectWithActions {
         this.setNotification(result.notification, result.notificationType, result.notificationDuration);
         this.#setIsDirty(isDirty, true);
 
-        this.objectId = result.objectId;
+        this.#objectId = result.objectId;
         if (this.isNew)
             this.isNew = result.isNew;
 

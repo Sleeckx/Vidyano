@@ -9,7 +9,7 @@ import type { ServiceObjectWithActions } from "./service-object-with-actions.js"
 /**
  * Represents a persistent object tab.
  */
-export class PersistentObjectTab extends Observable<PersistentObjectTab> {
+export abstract class PersistentObjectTab extends Observable<PersistentObjectTab> {
     #service: Service;
     #name: string;
     #label: string;
@@ -21,12 +21,12 @@ export class PersistentObjectTab extends Observable<PersistentObjectTab> {
 
     /**
      * Creates a new persistent object tab.
-     * @param service Gets or sets the service.
-     * @param name Gets or sets the name.
-     * @param label Gets or sets the label.
-     * @param target Gets or sets the target.
-     * @param parent Gets or sets the parent.
-     * @param isVisible Gets or sets the visibility.
+     * @param service The service instance.
+     * @param name The name for the tab.
+     * @param label The label for the tab.
+     * @param target The target for the tab.
+     * @param parent The parent persistent object for the tab.
+     * @param isVisible Whether the tab is visible.
      */
     constructor(service: Service, name: string, label: string, target: ServiceObjectWithActions, parent?: PersistentObject, isVisible = true) {
         super();
@@ -221,11 +221,12 @@ export class PersistentObjectQueryTab extends PersistentObjectTab {
 
     /**
      * Creates a new persistent object query tab.
-     * @param service Gets or sets the service.
-     * @param query Gets the query.
+     * @param service The service instance.
+     * @param query The query for the tab.
      */
     constructor(service: Service, query: Query) {
         super(service, query.name, query.label, query, query.parent, !query.isHidden);
+
         this.tabGroupIndex = 1;
         this.#query = query;
     }
